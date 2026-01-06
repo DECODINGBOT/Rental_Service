@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1081483052244",
+    "project_id": "sharingitems-34b98",
+    "storage_bucket": "sharingitems-34b98.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1081483052244:android:3ab4d3f10c29cee8616741",
+        "android_client_info": {
+          "package_name": "com.example.sharing_items"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXf7dA_SE0NIae7WZTchY9z7yW2HzqPmk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
