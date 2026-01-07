@@ -59,6 +59,8 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ),
       ),
+      
+      //TODO: body 부분 구현
     );
   }
 }

@@ -228,17 +228,24 @@ class _WriteScreenState extends State<WriteScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF4A5A73),
+        backgroundColor: Colors.white,//const Color(0xFF4A5A73),
         centerTitle: true,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.black),
         title: const Text(
-          '글쓰기',
+          '상품 등록하기',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: Colors.black,
           ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            color: Colors.black,
+          )
         ),
       ),
       body: SafeArea(

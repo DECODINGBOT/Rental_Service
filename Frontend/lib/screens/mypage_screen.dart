@@ -117,7 +117,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                   child: Row(
                     children: [
                       const Text(
-                        '작성하기',
+                        '상품 등록하기',
                         style: TextStyle(
                           fontFamily: 'NotoSans',
                           fontSize: 16,

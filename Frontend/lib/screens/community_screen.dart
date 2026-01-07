@@ -90,6 +90,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ),
         ),
       ),
+
+      //TODO: body 부분 구현
     );
   }
 }

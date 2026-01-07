@@ -24,6 +24,7 @@ class _LoginPageState extends State<LoginPage> {
         appBar: PreferredSize(
           preferredSize: Size.fromHeight(100),
           child: AppBar(
+            backgroundColor: Colors.white,
             centerTitle: true,
             title: Padding(
               padding: EdgeInsets.symmetric(vertical: 8.0),
@@ -33,12 +34,18 @@ class _LoginPageState extends State<LoginPage> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Colors.black,
                 ),
               ),
             ),
             toolbarHeight: 120.0,
-            backgroundColor: const Color(0xFF4A5A73)
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Container(
+                height: 1,
+                color: Colors.black,
+              ),
+            ),
           ),
         ),
         body: SingleChildScrollView(
@@ -55,7 +62,7 @@ class _LoginPageState extends State<LoginPage> {
               /// 비밀번호
               TextField(
                 controller: passwordController,
-                obscureText: false, // 비밀번호 안보이게
+                obscureText: true, // 비밀번호 안보이게
                 decoration: InputDecoration(hintText: "비밀번호"),
               ),
               SizedBox(height: 40),
@@ -98,9 +105,13 @@ class _LoginPageState extends State<LoginPage> {
       height: 54,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4A5A73),
+          backgroundColor: Colors.white,//const Color(0xFF4A5A73),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(
+              color: Colors.black,
+              width: 1,
+            ),
           ),
           elevation: 0,
         ),
@@ -108,7 +119,7 @@ class _LoginPageState extends State<LoginPage> {
           "로그인",
           style: TextStyle(
             fontSize: 24,
-            color: Colors.white,
+            color: Colors.black,
           ),
         ),
         onPressed: () {
@@ -148,9 +159,13 @@ class _LoginPageState extends State<LoginPage> {
       height: 54,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4A5A73),
+          backgroundColor: Colors.white,//const Color(0xFF4A5A73),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(
+              color: Colors.black,
+              width: 1,
+            ),
           ),
           elevation: 0,
         ),
@@ -158,7 +173,7 @@ class _LoginPageState extends State<LoginPage> {
           "회원가입",
           style: TextStyle(
             fontSize: 24,
-            color: Colors.white,
+            color: Colors.black,
           ),
         ),
         onPressed: () {
@@ -193,6 +208,10 @@ class _LoginPageState extends State<LoginPage> {
           backgroundColor: const Color(0xFFF5EFE7),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(
+              color: Colors.black,
+              width: 1,
+            ),
           ),
           elevation: 0,
         ),
@@ -207,7 +226,7 @@ class _LoginPageState extends State<LoginPage> {
             const Text(
               '구글로 로그인 하기',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 20,
                 color: Color(0xFF213555),
               ),
             ),
@@ -218,7 +237,6 @@ class _LoginPageState extends State<LoginPage> {
             context,
             MaterialPageRoute(builder: (context) => MainShell()),
           );
-          //Navigator.pushReplacementNamed(context, '/home');
         },
       ),
     );
@@ -233,6 +251,10 @@ class _LoginPageState extends State<LoginPage> {
           backgroundColor: const Color(0xFFFEE500),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(
+              color: Colors.black,
+              width: 1,
+            ),
           ),
           elevation: 0,
         ),
@@ -247,7 +269,7 @@ class _LoginPageState extends State<LoginPage> {
             const Text(
               '카카오로 로그인 하기',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 20,
                 color: Color(0xFF213555),
               ),
             ),

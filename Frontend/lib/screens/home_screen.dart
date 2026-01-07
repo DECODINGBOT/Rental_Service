@@ -57,8 +57,8 @@ class _HomeScreenState extends State<HomeScreen>
       duration: const Duration(milliseconds: 200),
     );
 
-    _loadSavedLocation(); //변경부분
-    setLocaleIdentifier('ko_KR');
+    _loadSavedLocation(); //마지막으로 설정한 내 위치 로드
+    setLocaleIdentifier('ko_KR'); //한국어 강제
   }
 
   @override
@@ -189,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<String?> _resolveCurrentLocationText() async {
-    // 1) 위치 서비스 켜져있는지 호가인
+    // 1) 위치 서비스 켜져있는지 확인
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if(!serviceEnabled) return null;
 
@@ -278,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen>
     final results = _filtered(fav.all);
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: Colors.white,//backgroundColor,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(120),
         child: AppBar(
@@ -477,7 +477,7 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _categoryTab() {
     return Container(
       decoration: BoxDecoration(
-        color: pointColorWeak,
+        color: Colors.white,//pointColorWeak,
         boxShadow: const [BoxShadow(blurRadius: 6, color: Colors.black12)],
       ),
       child: Column(
@@ -493,7 +493,7 @@ class _HomeScreenState extends State<HomeScreen>
                   turns: Tween<double>(begin: 0, end: 0.5).animate(_arrowCtrl),
                   child: Icon(
                     Icons.keyboard_arrow_down,
-                    color: widgetbackgroundColor,
+                    color: Colors.black, //widgetbackgroundColor,
                   ),
                 ),
               ),
