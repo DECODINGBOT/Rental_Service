@@ -1,11 +1,17 @@
+server:
+  port: 8080
+
 spring:
   # H2 Database ??
   datasource:
     driver-class-name: org.h2.Driver
-    url: 'jdbc:h2:mem:test'   # H2 DB ?? ?? (In-Memory Mode)
+    url: jdbc:h2:mem:lendy;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    #url: 'jdbc:h2:mem:test'   # H2 DB ?? ?? (In-Memory Mode)
     #url: 'jdbc:h2:~/test'    # H2 DB ?? ?? (Embedded Mode)
-    username: user        # H2 DB ?? ID (??? ??)
-    password: 12345678        # H2 DB ?? PW (??? ??)
+    username: sa
+    password:
+    #username: user        # H2 DB ?? ID (??? ??)
+    #password: 12345678        # H2 DB ?? PW (??? ??)
 
   # H2 Console ??
   h2:
@@ -15,11 +21,26 @@ spring:
 
   # JPA ??
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create        # DB ??? ?? (none, create, create-drop, update, validate)
+      ddl-auto: update
+    show_sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
-        format_sql: true      # ?? ?? ?? (??)
-        show_sql: true        # ?? ?? ??
+        format_sql: true
+
+  #jpa:
+    #database-platform: org.hibernate.dialect.H2Dialect
+    #hibernate:
+      #ddl-auto: update
+      #ddl-auto: create        # DB ??? ?? (none, create, create-drop, update, validate)
+    #properties:
+      #hibernate:
+        #dialect: org.hibernate.dialect.H2Dialect
+        #format_sql: true      # ?? ?? ?? (??)
+        #show_sql: true        # ?? ?? ??
+
+app:
+  jwt:
+    secret: "CHANGE_ME_TO_LONG_RANDOM_SECRET_CHANGE_ME_TO_LONG_RANDOM_SECRET"
+    access-token-minutes: 30
+    refresh-token-days: 14

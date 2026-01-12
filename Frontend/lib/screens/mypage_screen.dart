@@ -1,8 +1,11 @@
 import 'dart:io'; // ✅ 로컬 파일 표시용
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+import 'package:sharing_items/screens/login_screen.dart';
 import 'package:sharing_items/screens/write_screen.dart';
 import 'package:sharing_items/screens/edit_myinfo_screen.dart';
+import 'package:sharing_items/src/service/auth_service.dart';
 
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
@@ -42,9 +45,9 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
   // --------- 상태: 내 정보(초기값은 예시) ---------
   String? profileImageUrl;
-  String userId = '아이디';
-  DateTime joinDate = DateTime(2025, 8, 14);
-  String address = '주소';
+  String username = '';
+  DateTime? joinDate;
+  String? address;
 
   // 내가 쓴 글 (WriteScreen에서 돌아온 내용을 쌓아 보여줌)
   final List<MyPost> myPosts = [];
@@ -54,6 +57,34 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
   String _dateText(DateTime d) =>
       "${d.year}.${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async{
+    try{
+      final auth = context.read<AuthService>();
+      final profile = await auth.fetchMyProfile();
+
+      if(!mounted) return;
+
+      setState(() {
+        username = profile.username;
+        joinDate = profile.createdAt;
+        address = profile.address;
+        profileImageUrl = profile.profileImageUrl;
+        /// detailAddress/phone/bio
+      });
+    } catch (e){
+      if(!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('내 정보 불러오기 실패: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,9 +135,11 @@ class _MyPageScreenState extends State<MyPageScreen> {
               _buildMyInfoCard(
                 context,
                 profileImageUrl: profileImageUrl,
-                userId: userId,
-                joinedAt: _dateText(joinDate),
-                address: address,
+                username: username.isEmpty ? '아이디' : username,
+                createdAt: joinDate == null ? '-' : _dateText(joinDate!),
+                address: (address == null || address!.trim().isEmpty)
+                    ? '주소를 등록하세요'
+                    : address!,
               ),
               const SizedBox(height: 20),
 
@@ -164,8 +197,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
   Widget _buildMyInfoCard(
     BuildContext context, {
     required String? profileImageUrl,
-    required String userId,
-    required String joinedAt,
+    required String username,
+    required String createdAt,
     required String address,
   }) {
     return Container(
@@ -221,13 +254,13 @@ class _MyPageScreenState extends State<MyPageScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  userId,
+                  username,
                   style: _bodyStyle.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(child: Text(joinedAt, style: _detailStyle)),
+                    Expanded(child: Text(createdAt, style: _detailStyle)),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -238,23 +271,56 @@ class _MyPageScreenState extends State<MyPageScreen> {
           const SizedBox(width: 8),
 
           SizedBox(
-            height: 36,
-            child: OutlinedButton(
-              onPressed: () => _onEditTapped(context),
-              style: OutlinedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                side: const BorderSide(color: Colors.black, width: 1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+            width: 84,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 36,
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => _onEditTapped(context),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      side: const BorderSide(color: Colors.black, width: 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      textStyle: const TextStyle(
+                        fontFamily: 'NotoSans',
+                        fontSize: 14,
+                      ),
+                    ),
+                    child: const Text('수정'),
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                textStyle: const TextStyle(
-                  fontFamily: 'NotoSans',
-                  fontSize: 14,
+
+                const SizedBox(height: 8),
+
+                SizedBox(
+                  height: 36,
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => _onLogoutTapped(context),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.black, width: 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      textStyle: const TextStyle(
+                        fontFamily: 'NotoSans',
+                        fontSize: 14,
+                      ),
+                    ),
+                    child: const Text('로그아웃'),
+                  ),
                 ),
-              ),
-              child: const Text('수정'),
+              ],
             ),
           ),
         ],
@@ -268,33 +334,74 @@ class _MyPageScreenState extends State<MyPageScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => EditMyInfoScreen(
-          initialUserId: userId,
+          initialUsername: username.isEmpty ? '아이디' : username,
           initialJoinDate: joinDate,
-          initialAddress: address,
+          initialAddress: address ?? '',
           initialProfileImageUrl: profileImageUrl,
         ),
       ),
     );
 
     if (!mounted) return;
-    if (result != null && result is Map) {
-      setState(() {
-        userId = (result['userId'] as String?) ?? userId;
-        address = (result['address'] as String?) ?? address;
-        profileImageUrl =
-            (result['profileImageUrl'] as String?) ?? profileImageUrl;
+    if(result == null || result is! Map) return;
 
-        final iso = result['joinDate'] as String?;
-        if (iso != null) {
-          try {
-            joinDate = DateTime.parse(iso);
-          } catch (_) {}
-        }
-      });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('정보가 저장되었습니다.')));
+    try{
+      final auth = context.read<AuthService>();
+      await auth.updateMyProfile(
+        profileImageUrl: result['profileImageUrl'] as String?,
+        address: result['address'] as String?,
+        detailAddress: result['detailAddress'] as String?,
+        phone: result['phone'] as String?,
+        bio: result['bio'] as String?,
+      );
+      await _loadProfile();
+
+      if(!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('정보가 저장되었습니다.')),
+      );
+    } catch (e){
+      if(!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('저장 실패: $e')),
+      );
     }
+
+    ///
+    ///
+    ///
+  }
+
+  Future<void> _onLogoutTapped(BuildContext context) async {
+    final ok = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('로그아웃'),
+          content: const Text('로그아웃 하시겠어요?'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('취소'),
+            ),
+            TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('확인'),
+            ),
+          ],
+        )
+    );
+
+    if(ok != true) return;
+    if(!mounted) return;
+
+    final auth = context.read<AuthService>();
+    auth.signOut();
+
+    Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => false,
+    );
   }
 
   Future<void> _onWriteTapped(BuildContext context) async {

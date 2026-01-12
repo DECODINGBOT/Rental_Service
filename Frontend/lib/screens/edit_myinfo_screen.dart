@@ -1,28 +1,29 @@
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:sharing_items/src/service/auth_service.dart';
 
 class EditMyInfoScreen extends StatefulWidget {
   const EditMyInfoScreen({
     super.key,
-    this.initialUserId = '아이디',
+    this.initialUsername = '',
     this.initialJoinDate,
     this.initialAddress = '',
     this.initialDetailAddress = '',
     this.initialPhone = '',
-    this.initialAbout = '',
+    this.initialBio = '',
     this.initialProfileImageUrl,
   });
 
   // ── 초기값들 ───────────────────────────────────────────────────────────────
-  final String initialUserId;
+  final String initialUsername;
   final DateTime? initialJoinDate;
   final String initialAddress;
   final String initialDetailAddress;
   final String initialPhone;
-  final String initialAbout;
+  final String initialBio;
   final String? initialProfileImageUrl;
 
   @override
@@ -35,11 +36,11 @@ class _EditMyInfoScreenState extends State<EditMyInfoScreen> {
   static const Color inputBg = Color(0xFFF5EFE7);
 
   // 컨트롤러 (초기값은 initState에서 세팅)
-  late final TextEditingController _idCtrl;
+  //late final TextEditingController _idCtrl;
   late final TextEditingController _addrCtrl;
   late final TextEditingController _addrDetailCtrl;
   late final TextEditingController _phoneCtrl;
-  late final TextEditingController _aboutCtrl;
+  late final TextEditingController _bioCtrl;
 
   // 가입일은 읽기 전용으로 표시
   late DateTime _joinDate;
@@ -55,11 +56,11 @@ class _EditMyInfoScreenState extends State<EditMyInfoScreen> {
   void initState() {
     super.initState();
     // ⬇⬇⬇ 여기서 초기값을 컨트롤러에 넣어줍니다.
-    _idCtrl = TextEditingController(text: widget.initialUserId);
+    //_idCtrl = TextEditingController(text: widget.initialUserId);
     _addrCtrl = TextEditingController(text: widget.initialAddress);
     _addrDetailCtrl = TextEditingController(text: widget.initialDetailAddress);
     _phoneCtrl = TextEditingController(text: widget.initialPhone);
-    _aboutCtrl = TextEditingController(text: widget.initialAbout);
+    _bioCtrl = TextEditingController(text: widget.initialBio);
 
     _joinDate = widget.initialJoinDate ?? DateTime.now();
     _profileImageUrl = widget.initialProfileImageUrl;
@@ -67,11 +68,11 @@ class _EditMyInfoScreenState extends State<EditMyInfoScreen> {
 
   @override
   void dispose() {
-    _idCtrl.dispose();
+    //_idCtrl.dispose();
     _addrCtrl.dispose();
     _addrDetailCtrl.dispose();
     _phoneCtrl.dispose();
-    _aboutCtrl.dispose();
+    _bioCtrl.dispose();
     super.dispose();
   }
 
@@ -197,16 +198,41 @@ class _EditMyInfoScreenState extends State<EditMyInfoScreen> {
 
     setState(() => _saving = false);
 
-    // 저장 결과를 Map으로 되돌려 보내 마이페이지에서 setState로 반영
-    Navigator.pop(context, {
-      'userId': _idCtrl.text.trim(),
-      'joinDate': _joinDate.toIso8601String(),
-      'address': _addrCtrl.text.trim(),
-      'detailAddress': _addrDetailCtrl.text.trim(),
-      'phone': _phoneCtrl.text.trim(),
-      'about': _aboutCtrl.text.trim(),
-      'profileImageUrl': finalProfileUrl,
-    });
+    ///
+    ///
+    ///
+
+    final auth = context.read<AuthService>();
+
+    try{
+      final updated = await auth.updateMyProfile(
+        profileImageUrl: finalProfileUrl,
+        address: _addrCtrl.text.trim(),
+        detailAddress: _addrDetailCtrl.text.trim(),
+        phone: _phoneCtrl.text.trim(),
+        bio: _bioCtrl.text.trim(),
+      );
+
+      if(!mounted) return;
+
+      Navigator.pop(context, {
+        //'joinDate': updated.createdAt.toIso8601String(),
+        'address': updated.address ?? '',
+        'detailAddress': updated.detailAddress ?? '',
+        'phone': updated.phone ?? '',
+        'bio': updated.bio ?? '',
+        'profileImageUrl': updated.profileImageUrl,
+      });
+    } catch (e){
+      if(!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      if(mounted){
+        setState(() => _saving = false);
+      }
+    }
   }
 
   @override
@@ -304,11 +330,20 @@ class _EditMyInfoScreenState extends State<EditMyInfoScreen> {
                 ),
 
                 _label('아이디'),
-                TextFormField(
-                  controller: _idCtrl,
-                  decoration: _input('아이디'),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? '아이디를 입력해 주세요.' : null,
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14
+                  ),
+                  decoration: BoxDecoration(
+                    color: inputBg,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    widget.initialUsername.isEmpty ? '아이디' : widget.initialUsername,
+                    style: const TextStyle(color: Colors.black87),
+                  ),
                 ),
 
                 _label('가입일'),
@@ -332,8 +367,10 @@ class _EditMyInfoScreenState extends State<EditMyInfoScreen> {
                 TextFormField(
                   controller: _addrCtrl, // ← 초기값 표시됨
                   decoration: _input('예: 서울시 마포구 합정동'),
+                  /*
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? '주소를 입력해 주세요.' : null,
+                   */
                 ),
 
                 _label('상세 주소'),
@@ -354,7 +391,7 @@ class _EditMyInfoScreenState extends State<EditMyInfoScreen> {
 
                 _label('자기소개 (선택)'),
                 TextFormField(
-                  controller: _aboutCtrl, // ← 초기값 표시됨
+                  controller: _bioCtrl, // ← 초기값 표시됨
                   maxLines: 4,
                   minLines: 3,
                   decoration: _input('간단한 소개를 적어 주세요.'),

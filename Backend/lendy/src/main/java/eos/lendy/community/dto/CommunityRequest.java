@@ -1,6 +1,6 @@
 package eos.lendy.community.dto;
 
-public record BoardRequest(
+public record CommunityRequest(
         String title,
         String content,
         String name

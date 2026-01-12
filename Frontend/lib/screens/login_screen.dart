@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:sharing_items/main_shell.dart';
+import 'package:sharing_items/screens/signup_screen.dart';
 import 'package:sharing_items/src/service/auth_service.dart';
 
 /// 로그인 페이지
@@ -13,7 +14,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  TextEditingController emailController = TextEditingController();
+  TextEditingController usernameController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
 
   @override
@@ -29,8 +30,8 @@ class _LoginPageState extends State<LoginPage> {
             title: Padding(
               padding: EdgeInsets.symmetric(vertical: 8.0),
               child: Text(
-                user == null ? "로그인 해주세요 🙂" : "${user.email}님 안녕하세요 👋",
-                //"로그인 해주세요",
+                //user == null ? "로그인 해주세요 🙂" : "${user.username}님 안녕하세요 👋",
+                "로그인 해주세요 🙂",
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -53,16 +54,16 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              /// 이메일
+              /// 아이디
               TextField(
-                controller: emailController,
-                decoration: InputDecoration(hintText: "이메일"),
+                controller: usernameController,
+                decoration: InputDecoration(hintText: "아이디"),
               ),
         
               /// 비밀번호
               TextField(
                 controller: passwordController,
-                obscureText: true, // 비밀번호 안보이게
+                obscureText: true, /// 비밀번호 안보이게
                 decoration: InputDecoration(hintText: "비밀번호"),
               ),
               SizedBox(height: 40),
@@ -86,7 +87,7 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               signInButton(authService),
               const SizedBox(height: 12),
-              signUpButton(authService),
+              signUpButton(),
               const SizedBox(height: 100),
               signInWithGoogle(),
               const SizedBox(height: 12),
@@ -125,7 +126,7 @@ class _LoginPageState extends State<LoginPage> {
         onPressed: () {
           // 로그인
           authService.signIn(
-            email: emailController.text,
+            username: usernameController.text,
             password: passwordController.text,
             onSuccess: () {
               // 로그인 성공
@@ -144,7 +145,7 @@ class _LoginPageState extends State<LoginPage> {
             onError: (err) {
               // 에러 발생
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(err),
+                content: Text('아이디와 비밀번호를 정확하게 입력해주세요.'),
               ));
             },
           );
@@ -153,7 +154,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget signUpButton(AuthService authService) {
+  Widget signUpButton() {
     return SizedBox(
       width: double.infinity,
       height: 54,
@@ -177,9 +178,14 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         onPressed: () {
+          Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SignupScreen()),
+          );
+          /*
           // 회원가입
           authService.signUp(
-            email: emailController.text,
+            username: usernameController.text,
             password: passwordController.text,
             onSuccess: () {
               // 회원가입 성공
@@ -194,6 +200,7 @@ class _LoginPageState extends State<LoginPage> {
 		          ));
             },
           );
+          */
         },
       ),
     );
@@ -280,7 +287,6 @@ class _LoginPageState extends State<LoginPage> {
             context,
             MaterialPageRoute(builder: (context) => MainShell()),
           );
-          //Navigator.pushReplacementNamed(context, '/home');
         },
       ),
     );

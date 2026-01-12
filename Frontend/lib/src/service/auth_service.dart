@@ -1,83 +1,194 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+class LongUserSession {
+  final int id;
+  final String username;
+  final DateTime createdAt;
+
+  LongUserSession({
+    required this.id,
+    required this.username,
+    required this.createdAt,
+  });
+
+  factory LongUserSession.fromJson(Map<String, dynamic> json){
+    return LongUserSession(
+        id: (json['id'] as num).toInt(),
+        username: json['username'] as String,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+    );
+  }
+}
+
+class UserProfileResponse {
+  final int id;
+  final String username;
+  final DateTime createdAt;
+  final String? profileImageUrl;
+  final String? address;
+  final String? detailAddress;
+  final String? phone;
+  final String? bio;
+
+  UserProfileResponse({
+    required this.id,
+    required this.username,
+    required this.createdAt,
+    this.profileImageUrl,
+    this.address,
+    this.detailAddress,
+    this.phone,
+    this.bio,
+  });
+
+  factory UserProfileResponse.fromJson(Map<String, dynamic> json){
+    return UserProfileResponse(
+      id: (json['id'] as num).toInt(),
+      username: json['username'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      profileImageUrl: json['profileImageUrl'] as String?,
+      address: json['address'] as String?,
+      detailAddress: json['detailAddress'] as String?,
+      phone: json['phone'] as String?,
+      bio: json['bio'] as String?
+    );
+  }
+}
 
 class AuthService extends ChangeNotifier {
-  User? currentUser() {
-    // 현재 유저(로그인 되지 않은 경우 null 반환)
-    return FirebaseAuth.instance.currentUser;
-  }
+  LongUserSession? _session;
+  LongUserSession? currentUser() => _session;
+  bool get isLoggedIn => _session != null;
 
-  void signUp({
-    required String email, // 이메일
-    required String password, // 비밀번호
-    required Function() onSuccess, // 가입 성공시 호출되는 함수
-    required Function(String err) onError, // 에러 발생시 호출되는 함수
+  /// 개인 와이파이 IP 주소에 맞춰 변경해서 사용
+  /// ex) 'http://000.000.000.000:8080'
+  final baseUrl = '';
+
+  /// 로그인
+  Future<void> signIn({
+    required String username,
+    required String password,
+    required VoidCallback onSuccess,
+    required Function(String err) onError,
   }) async {
-    // 회원가입
-    // 이메일 및 비밀번호 입력 여부 확인
-    if (email.isEmpty) {
-      onError("이메일을 입력해 주세요.");
-      return;
-    } else if (password.isEmpty) {
-      onError("비밀번호를 입력해 주세요.");
-      return;
-    }
-
-    // firebase auth 회원 가입
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
+      final uri = Uri.parse('$baseUrl/api/auth/login');
+      final res = await http.post(
+        uri,
+        headers: {'Content-Type' : 'application/json'},
+        body: jsonEncode({'username': username, 'password': password}),
       );
 
-      // 성공 함수 호출
-      onSuccess();
-    } on FirebaseAuthException catch (e) {
-      // Firebase auth 에러 발생
-      onError(e.message!);
-    } catch (e) {
-      // Firebase auth 이외의 에러 발생
-      onError(e.toString());
-    }
-
-  }
-
-  void signIn({
-    required String email, // 이메일
-    required String password, // 비밀번호
-    required Function() onSuccess, // 로그인 성공시 호출되는 함수
-    required Function(String err) onError, // 에러 발생시 호출되는 함수
-  }) async {
-    // 로그인
-    if (email.isEmpty) {
-      onError('이메일을 입력해주세요.');
-      return;
-    } else if (password.isEmpty) {
-      onError('비밀번호를 입력해주세요.');
-      return;
-    }
-
-    // 로그인 시도
-    try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      onSuccess(); // 성공 함수 호출
-      notifyListeners(); // 로그인 상태 변경 알림
-    } on FirebaseAuthException catch (e) {
-      // firebase auth 에러 발생
-      onError(e.message!);
-    } catch (e) {
-      // Firebase auth 이외의 에러 발생
+      if(res.statusCode >= 200 && res.statusCode < 300){
+        // Response JSON: {id, username, createdAt}
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        _session = LongUserSession.fromJson(data);
+        notifyListeners();
+        onSuccess();
+        return;
+      }
+      onError(_extractError(res));
+    }catch (e){
       onError(e.toString());
     }
   }
 
-  void signOut() async {
-    // 로그아웃
-    await FirebaseAuth.instance.signOut();
-    notifyListeners(); // 로그인 상태 변경 알림
+  /// 회원가입
+  Future<void> signUp({
+    required String username,
+    required String password,
+    required VoidCallback onSuccess,
+    required Function(String err) onError,
+  }) async {
+    try {
+      /// Android Emulator -> ex) 'http://0.0.0.0:0000'
+      /// Device: PC와 같은 와이파이 IP -> ex) 'http://000.000.000.000:0000'
+      /// 핸드폰으로 실행할 땐 개인 와이파이 주소로 변경 후 사용할 것.
+      final uri = Uri.parse('$baseUrl/api/auth/signup');
+      final res = await http.post(
+        uri,
+        headers: {'Content-Type' : 'application/json'},
+        body: jsonEncode({'username': username, 'password': password}),
+      );
+
+      if(res.statusCode >= 200 && res.statusCode < 300){
+        // Response JSON: {id, username, createdAt}
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        _session = LongUserSession.fromJson(data);
+        notifyListeners();
+        onSuccess();
+        return;
+      }
+      onError(_extractError(res));
+    }catch (e){
+      onError(e.toString());
+    }
+  }
+
+  void signOut(){
+    _session = null;
+    notifyListeners();
+  }
+
+  /// 내 정보 조회
+  Future<UserProfileResponse> fetchMyProfile() async {
+    final s = _requireSession();
+    final uri = Uri.parse('$baseUrl/api/users/${s.id}');
+    final res = await http.get(uri);
+
+    if(res.statusCode >= 200 && res.statusCode < 300){
+      return UserProfileResponse.fromJson(jsonDecode(res.body));
+    }
+    throw Exception(_extractError(res));
+  }
+
+  // 내 정보 수정
+  Future<UserProfileResponse> updateMyProfile({
+    String? profileImageUrl,
+    String? address,
+    String? detailAddress,
+    String? phone,
+    String? bio,
+}) async {
+    final s = _requireSession();
+    final uri = Uri.parse('$baseUrl/api/users/${s.id}');
+    final res = await http.patch(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'profileImageUrl': profileImageUrl,
+        'address': address,
+        'detailAddress': detailAddress,
+        'phone': phone,
+        'bio': bio,
+      }),
+    );
+
+    if(res.statusCode >= 200 && res.statusCode < 300){
+      return UserProfileResponse.fromJson(jsonDecode(res.body));
+    }
+    throw Exception(_extractError(res));
+  }
+
+  LongUserSession _requireSession(){
+    final s = _session;
+    if(s == null){
+      throw Exception('로그인이 필요합니다.');
+    }
+    return s;
+  }
+
+  String _extractError(http.Response res){
+    try{
+      final body = jsonDecode(res.body);
+      if(body is Map && body['message'] != null){
+        return body['message'].toString();
+      }
+      return res.body.toString();
+    }catch (_){
+      return res.body.toString();
+    }
   }
 }
