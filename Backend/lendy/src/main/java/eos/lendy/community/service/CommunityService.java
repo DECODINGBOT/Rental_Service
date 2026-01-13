@@ -1,29 +1,27 @@
 package eos.lendy.community.service;
 
-import eos.lendy.community.dto.CommunityFixRequest;
-import eos.lendy.community.dto.CommunityRequest;
-import eos.lendy.community.dto.CommunityResponse;
+import eos.lendy.community.dto.*;
 import eos.lendy.community.entity.CommunityEntity;
 
 import java.util.List;
 
 public interface CommunityService {
 
-    void create(CommunityRequest communityRequest);
-
-    CommunityResponse read(Long id);
-
-    List<CommunityResponse> readAll();
-
-    void fix(CommunityFixRequest communityFixRequest);
-
+    CommunityDetailResponse create(CommunityRequest request);
+    CommunityDetailResponse read(Long id);
+    List<CommunityListResponse> readAllLatest();
+    void fix(Long id, CommunityFixRequest request);
     void delete(Long id);
+    CommentResponse addComment(Long boardId, CommentCreateRequest request);
+    List<CommentResponse> listCommentsLatest(Long boardId);
+    LikeToggleResponse toggleLike(Long boardId, String username);
 
-    default CommunityEntity requestToEntity(CommunityRequest communityRequest) {
+    /*
+    default CommunityEntity requestToEntity(CommunityRequest request) {
         return CommunityEntity.builder()
-                .title(communityRequest.title())
-                .content(communityRequest.content())
-                .name(communityRequest.name())
+                .title(request.title())
+                .content(request.content())
+                .username(request.username())
                 .build();
     }
 
@@ -32,7 +30,9 @@ public interface CommunityService {
                 .id(communityEntity.getId())
                 .title(communityEntity.getTitle())
                 .content(communityEntity.getContent())
-                .name(communityEntity.getName())
+                .name(communityEntity.getUsername())
                 .build();
     }
+
+     */
 }

@@ -1,10 +1,13 @@
 package eos.lendy.community.entity;
 
-import eos.lendy.community.dto.CommunityFixRequest;
+import eos.lendy.user.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
+@Table(name = "boards")
 @Builder
 @Getter
 @AllArgsConstructor
@@ -14,18 +17,48 @@ public class CommunityEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
+    @Column(nullable = false)
     private String title;
 
-    @Column
+    @Lob
+    @Column(nullable = false)
     private String content;
 
-    @Column
-    private String name;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
 
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    void onCreate(){
+        final LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    @PreUpdate
+    void onUpdate(){
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void update(String title, String content){
+        if(title != null){
+            this.title = title;
+        }
+        if(content != null){
+            this.content = content;
+        }
+    }
+    /*
     public void fix(CommunityFixRequest communityFixRequest){
         this.title = communityFixRequest.title();
         this.content = communityFixRequest.content();
-        this.name = communityFixRequest.name();
+        this.username = communityFixRequest.username();
     }
+     */
 }

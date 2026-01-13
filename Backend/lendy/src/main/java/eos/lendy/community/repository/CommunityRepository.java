@@ -1,7 +1,7 @@
 package eos.lendy.community.repository;
 
 import eos.lendy.community.entity.CommunityEntity;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface CommunityRepository extends CrudRepository<CommunityEntity, Long> {
+public interface CommunityRepository extends JpaRepository<CommunityEntity, Long> {
 }
