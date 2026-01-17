@@ -44,3 +44,6 @@ app:
     secret: "CHANGE_ME_TO_LONG_RANDOM_SECRET_CHANGE_ME_TO_LONG_RANDOM_SECRET"
     access-token-minutes: 30
     refresh-token-days: 14
+
+tosspayments:
+  secret-key: ${TOSS_SECRET_KEY}
