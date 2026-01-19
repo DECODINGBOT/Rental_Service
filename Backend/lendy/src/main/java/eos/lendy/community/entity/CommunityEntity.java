@@ -5,12 +5,14 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "boards")
-@Builder
+//@Builder
 @Getter
-@AllArgsConstructor
+//@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CommunityEntity {
 
@@ -28,11 +30,21 @@ public class CommunityEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BoardImageEntity> images = new ArrayList<>();
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    @Builder
+    public CommunityEntity(String title, String content, UserEntity user){
+        this.title = title;
+        this.content = content;
+        this.user = user;
+    }
 
     @PrePersist
     void onCreate(){

@@ -49,10 +49,16 @@ public class UserEntity {
     }
 
     public void updateProfile(String profileImageUrl, String address, String detailAddress, String phone, String bio){
+        if(profileImageUrl != null) {
+            this.profileImageUrl = profileImageUrl;
+        }
+        if(address != null) this.address = address;
+        if(detailAddress != null) this.detailAddress = detailAddress;
+        if(phone != null) this.phone = phone;
+        if(bio != null) this.bio = bio;
+    }
+
+    public void updateProfileImageUrl(String profileImageUrl){
         this.profileImageUrl = profileImageUrl;
-        this.address = address;
-        this.detailAddress = detailAddress;
-        this.phone = phone;
-        this.bio = bio;
     }
 }

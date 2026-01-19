@@ -17,6 +17,7 @@ class _ChatScreenState extends State<ChatScreen> {
         child: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
+          automaticallyImplyLeading: false,
           //centerTitle: true,
           titleSpacing: 16,
           title: Row(

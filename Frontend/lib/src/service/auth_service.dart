@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:sharing_items/src/api_config.dart';
 
 class LongUserSession {
   final int id;
@@ -64,7 +66,7 @@ class AuthService extends ChangeNotifier {
 
   /// 개인 와이파이 IP 주소에 맞춰 변경해서 사용
   /// ex) 'http://000.000.000.000:8080'
-  final baseUrl = '';
+  final _baseUrl = ApiConfig.baseUrl;
 
   /// 로그인
   Future<void> signIn({
@@ -74,7 +76,7 @@ class AuthService extends ChangeNotifier {
     required Function(String err) onError,
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl/api/auth/login');
+      final uri = Uri.parse('$_baseUrl/api/auth/login');
       final res = await http.post(
         uri,
         headers: {'Content-Type' : 'application/json'},
@@ -106,7 +108,7 @@ class AuthService extends ChangeNotifier {
       /// Android Emulator -> ex) 'http://0.0.0.0:0000'
       /// Device: PC와 같은 와이파이 IP -> ex) 'http://000.000.000.000:0000'
       /// 핸드폰으로 실행할 땐 개인 와이파이 주소로 변경 후 사용할 것.
-      final uri = Uri.parse('$baseUrl/api/auth/signup');
+      final uri = Uri.parse('$_baseUrl/api/auth/signup');
       final res = await http.post(
         uri,
         headers: {'Content-Type' : 'application/json'},
@@ -135,7 +137,7 @@ class AuthService extends ChangeNotifier {
   /// 내 정보 조회
   Future<UserProfileResponse> fetchMyProfile() async {
     final s = _requireSession();
-    final uri = Uri.parse('$baseUrl/api/users/${s.id}');
+    final uri = Uri.parse('$_baseUrl/api/users/${s.id}');
     final res = await http.get(uri);
 
     if(res.statusCode >= 200 && res.statusCode < 300){
@@ -151,9 +153,9 @@ class AuthService extends ChangeNotifier {
     String? detailAddress,
     String? phone,
     String? bio,
-}) async {
+  }) async {
     final s = _requireSession();
-    final uri = Uri.parse('$baseUrl/api/users/${s.id}');
+    final uri = Uri.parse('$_baseUrl/api/users/${s.id}');
     final res = await http.patch(
       uri,
       headers: {'Content-Type': 'application/json'},
@@ -169,6 +171,21 @@ class AuthService extends ChangeNotifier {
     if(res.statusCode >= 200 && res.statusCode < 300){
       return UserProfileResponse.fromJson(jsonDecode(res.body));
     }
+    throw Exception(_extractError(res));
+  }
+
+  Future<UserProfileResponse> uploadMyProfileImage(File file) async {
+    final s = _requireSession();
+    final uri = Uri.parse('$_baseUrl/api/users/${s.id}/profile-image');
+    final req = http.MultipartRequest('POST', uri);
+    req.files.add(await http.MultipartFile.fromPath('image', file.path));
+    final streamed = await req.send();
+    final res = await http.Response.fromStream(streamed);
+
+    if(res.statusCode >= 200 && res.statusCode < 300){
+      return UserProfileResponse.fromJson(jsonDecode(res.body));
+    }
+
     throw Exception(_extractError(res));
   }
 

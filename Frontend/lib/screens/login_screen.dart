@@ -27,6 +27,7 @@ class _LoginPageState extends State<LoginPage> {
           child: AppBar(
             backgroundColor: Colors.white,
             centerTitle: true,
+            automaticallyImplyLeading: false,
             title: Padding(
               padding: EdgeInsets.symmetric(vertical: 8.0),
               child: Text(
@@ -135,9 +136,10 @@ class _LoginPageState extends State<LoginPage> {
               ));
               // MainShell로 이동
               
-              Navigator.pushReplacement(
+              Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => MainShell()),
+                MaterialPageRoute(builder: (_) => const MainShell()),
+                    (route) => false,
               );
               
               //Navigator.pushReplacementNamed(context, '/home');

@@ -1,7 +1,7 @@
 package eos.lendy.community.dto;
 
 public record CommentCreateRequest(
-        String username,
+        Long userId,
         String content
 ) {
 }
