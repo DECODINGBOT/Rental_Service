@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:sharing_items/const/Colors.dart';
 import 'package:sharing_items/src/custom/item_info.dart';
 import 'package:sharing_items/src/service/favorites_provider.dart';
+import 'package:sharing_items/screens/product_detail_screen.dart';
 
 class FavoritesPage extends StatelessWidget {
   const FavoritesPage({super.key});
@@ -23,11 +24,7 @@ class FavoritesPage extends StatelessWidget {
           titleSpacing: 16,
           title: Row(
             children: [
-              const Icon(
-                Icons.star,
-                color: Colors.black,
-                size: 32,
-              ),
+              const Icon(Icons.star, color: Colors.black, size: 32),
               const SizedBox(width: 8),
               const Text(
                 '즐겨찾기',
@@ -41,10 +38,7 @@ class FavoritesPage extends StatelessWidget {
           ),
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(1),
-            child: Container(
-              height: 1,
-              color: Colors.black,
-            ),
+            child: Container(height: 1, color: Colors.black),
           ),
         ),
       ),
@@ -59,17 +53,36 @@ class FavoritesPage extends StatelessWidget {
                   final m = liked[index];
                   final id = m['id'] as String;
 
-                  return ItemInfo(
-                    key: ValueKey(id),
-                    category: m['category'] as String,
-                    title: m['title'] as String,
-                    location: m['location'] as String,
-                    price: m['price'] as int,
-                    isLike: fav.isFavoriteById(id),
-                    onLikeChanged: (_) {
-                      // mockItems의 isLike 토글 + 모든 화면에 반영
-                      context.read<FavoritesProvider>().toggleById(id);
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProductDetailScreen(
+                            showSearchBar: false, // ⭐ 즐겨찾기 탭은 검색창 없는 AppBar
+                            productId: id, // ⭐ 필수
+                            sellerName: '아이디', // 데이터 없으면 더미
+                            title: m['title'] as String,
+                            location: m['location'] as String,
+                            pricePerDayLabel: '${m['price']}원 / day',
+                            depositLabel: '보증금 0원',
+                            dateRangeLabel: '대여기간 선택',
+                          ),
+                        ),
+                      );
                     },
+                    child: ItemInfo(
+                      key: ValueKey(id),
+                      category: m['category'] as String,
+                      title: m['title'] as String,
+                      location: m['location'] as String,
+                      price: m['price'] as int,
+                      isLike: fav.isFavoriteById(id),
+                      onLikeChanged: (_) {
+                        context.read<FavoritesProvider>().toggleById(id);
+                      },
+                    ),
                   );
                 },
               ),
