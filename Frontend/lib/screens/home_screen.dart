@@ -7,6 +7,7 @@ import 'package:sharing_items/const/colors.dart';
 import 'package:sharing_items/screens/write_screen.dart';
 import 'package:sharing_items/src/custom/item_info.dart';
 import 'package:sharing_items/src/service/favorites_provider.dart';
+import 'package:sharing_items/screens/product_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final TextEditingController? searchController;
@@ -46,11 +47,13 @@ class _HomeScreenState extends State<HomeScreen>
   late final AnimationController _arrowCtrl;
   final Set<String> _selectedCategories = {};
 
+  void _onSearchChanged() => setState(() {});
+
   @override
   void initState() {
     super.initState();
     _internalController = TextEditingController();
-    _controller.addListener(() => setState(() {})); // 검색어 변경 시 재빌드
+    _controller.addListener(_onSearchChanged); // 검색어 변경 시 재빌드
 
     _arrowCtrl = AnimationController(
       vsync: this,
@@ -58,13 +61,13 @@ class _HomeScreenState extends State<HomeScreen>
     );
 
     _loadSavedLocation(); //마지막으로 설정한 내 위치 로드
-    setLocaleIdentifier('ko_KR'); //한국어 강제
+    // setLocaleIdentifier('ko_KR'); //한국어 강제
   }
 
   @override
   void dispose() {
     _locationInputCtrl.dispose(); //변경사항
-    _controller.removeListener(() {});
+    _controller.removeListener(_onSearchChanged);
     if (widget.searchController == null) {
       _internalController.dispose();
     }
@@ -93,10 +96,10 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
-  Future<void> _loadSavedLocation() async{
+  Future<void> _loadSavedLocation() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString(_kLocationKey);
-    if(saved != null && saved.trim().isNotEmpty){
+    if (saved != null && saved.trim().isNotEmpty) {
       setState(() => _currentLocationText = saved);
     }
   }
@@ -106,10 +109,10 @@ class _HomeScreenState extends State<HomeScreen>
     await prefs.setString(_kLocationKey, text);
   }
 
-  void _openLocationPicker() async{
+  void _openLocationPicker() async {
     _locationInputCtrl.text = (_currentLocationText == "위치 설정")
-      ? ""
-      : _currentLocationText;
+        ? ""
+        : _currentLocationText;
 
     await showModalBottomSheet(
       context: context,
@@ -127,23 +130,20 @@ class _HomeScreenState extends State<HomeScreen>
                 children: [
                   const Text(
                     "내 위치 설정",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 12),
 
                   OutlinedButton.icon(
-                    onPressed: () async{
+                    onPressed: () async {
                       final text = await _resolveCurrentLocationText();
-                      if(!mounted) return;
+                      if (!mounted) return;
 
-                      if(text != null && text.trim().isNotEmpty){
+                      if (text != null && text.trim().isNotEmpty) {
                         setState(() => _currentLocationText = text);
                         await _savedLocation(text);
                         Navigator.pop(context);
-                      }else{
+                      } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("현재 위치를 가져오지 못했어요.")),
                         );
@@ -169,19 +169,19 @@ class _HomeScreenState extends State<HomeScreen>
                   ElevatedButton(
                     onPressed: () async {
                       final input = _locationInputCtrl.text.trim();
-                      if(input.isEmpty) return;
+                      if (input.isEmpty) return;
 
                       setState(() => _currentLocationText = input);
                       await _savedLocation(input);
 
-                      if(!mounted) return;
+                      if (!mounted) return;
                       Navigator.pop(context);
                     },
                     child: const Text("저장"),
                   ),
                 ],
               ),
-            )
+            ),
           ),
         );
       },
@@ -191,21 +191,19 @@ class _HomeScreenState extends State<HomeScreen>
   Future<String?> _resolveCurrentLocationText() async {
     // 1) 위치 서비스 켜져있는지 확인
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if(!serviceEnabled) return null;
+    if (!serviceEnabled) return null;
 
     // 2) 권한 확인/요청
     var permission = await Geolocator.checkPermission();
-    if(permission == LocationPermission.denied){
+    if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if(permission == LocationPermission.denied) return null;
+      if (permission == LocationPermission.denied) return null;
     }
-    if(permission == LocationPermission.deniedForever) return null;
+    if (permission == LocationPermission.deniedForever) return null;
 
     // 3) 현재 위치 얻기
     final pos = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-      ),
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
     );
 
     // 한국 주소 형태로 대충 구성
@@ -213,22 +211,22 @@ class _HomeScreenState extends State<HomeScreen>
       pos.latitude,
       pos.longitude,
     );
-    if(placemarks.isEmpty) return null;
+    if (placemarks.isEmpty) return null;
 
     final p = placemarks.first;
 
     final List<String> parts = [];
 
-    if((p.administrativeArea ?? "").isNotEmpty){
+    if ((p.administrativeArea ?? "").isNotEmpty) {
       parts.add(p.administrativeArea!); //도/광역시
     }
-    if((p.subAdministrativeArea ?? "").isNotEmpty){
+    if ((p.subAdministrativeArea ?? "").isNotEmpty) {
       parts.add(p.subAdministrativeArea!); //성동구
     }
-    if((p.locality ?? "").isNotEmpty){
+    if ((p.locality ?? "").isNotEmpty) {
       parts.add(p.locality!); // (시/구)
     }
-    if((p.subLocality ?? "").isNotEmpty){
+    if ((p.subLocality ?? "").isNotEmpty) {
       parts.add(p.subLocality!); //(동)
     }
     /*
@@ -237,21 +235,21 @@ class _HomeScreenState extends State<HomeScreen>
     if((p.name ?? ""). isNotEmpty) parts.add(p.name!);
     */
 
-    if(parts.length < 2 && (p.locality ?? "").isNotEmpty){
+    if (parts.length < 2 && (p.locality ?? "").isNotEmpty) {
       parts.add(p.locality!);
     }
     final text = _dedupAndJoin(parts);
     return text.isEmpty ? null : text;
   }
 
-  String _dedupAndJoin(List<String> parts){
+  String _dedupAndJoin(List<String> parts) {
     final seen = <String>{};
     final out = <String>[];
 
-    for(final s in parts){
+    for (final s in parts) {
       final t = s.trim();
-      if(t.isEmpty) continue;
-      if(seen.add(t)) out.add(t);
+      if (t.isEmpty) continue;
+      if (seen.add(t)) out.add(t);
     }
     return out.join(' ');
   }
@@ -278,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen>
     final results = _filtered(fav.all);
 
     return Scaffold(
-      backgroundColor: Colors.white,//backgroundColor,
+      backgroundColor: Colors.white, //backgroundColor,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(120),
         child: AppBar(
@@ -297,7 +295,10 @@ class _HomeScreenState extends State<HomeScreen>
                         onTap: _openLocationPicker,
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 6,
+                          ),
                           child: Row(
                             children: [
                               Text(
@@ -344,10 +345,7 @@ class _HomeScreenState extends State<HomeScreen>
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.black,
-                        width: 1,
-                      )
+                      border: Border.all(color: Colors.black, width: 1),
                     ),
                     child: TextField(
                       controller: _controller,
@@ -396,13 +394,13 @@ class _HomeScreenState extends State<HomeScreen>
     return IconButton(
       onPressed: () {
         Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>WriteScreen(), // 이동할 페이지
-      ),
-    );
+          context,
+          MaterialPageRoute(
+            builder: (context) => WriteScreen(), // 이동할 페이지
+          ),
+        );
       },
-      icon: Icon(Icons.add_rounded, color: Colors.white, size: 35,),
+      icon: Icon(Icons.add_rounded, color: Colors.white, size: 35),
       style: IconButton.styleFrom(
         backgroundColor: pointColorWeak, // 원형 배경 색
         shape: CircleBorder(),
@@ -450,21 +448,43 @@ class _HomeScreenState extends State<HomeScreen>
             delegate: SliverChildBuilderDelegate((context, index) {
               final m = results[index];
               final id = m['id'] as String;
-          
+
               return Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 8,
                 ),
-                child: ItemInfo(
-                  key: ValueKey(id),
-                  category: m['category'] as String,
-                  title: m['title'] as String,
-                  location: m['location'] as String,
-                  price: m['price'] as int,
-                  isLike: fav.isFavoriteById(id),
-                  onLikeChanged: (_) =>
-                      context.read<FavoritesProvider>().toggleById(id), // 토글
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(
+                    12,
+                  ), // 카드 모서리 느낌 (원하면 수치 조절)
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProductDetailScreen(
+                          showSearchBar: true, // 홈 탭에서 들어왔으니까
+                          productId: id, // ⭐ 필수
+                          sellerName: '아이디', // 일단 더미
+                          title: m['title'] as String,
+                          location: m['location'] as String,
+                          pricePerDayLabel: '${m['price']}원 / day',
+                          depositLabel: '보증금 0원', // 지금 데이터 없으면 더미로
+                          dateRangeLabel: '대여기간 선택', // 더미
+                        ),
+                      ),
+                    );
+                  },
+                  child: ItemInfo(
+                    key: ValueKey(id),
+                    category: m['category'] as String,
+                    title: m['title'] as String,
+                    location: m['location'] as String,
+                    price: m['price'] as int,
+                    isLike: fav.isFavoriteById(id),
+                    onLikeChanged: (_) =>
+                        context.read<FavoritesProvider>().toggleById(id),
+                  ),
                 ),
               );
             }, childCount: results.length),
@@ -477,7 +497,7 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _categoryTab() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,//pointColorWeak,
+        color: Colors.white, //pointColorWeak,
         boxShadow: const [BoxShadow(blurRadius: 6, color: Colors.black12)],
       ),
       child: Column(
