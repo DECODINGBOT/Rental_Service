@@ -1,5 +1,6 @@
 package eos.lendy.product.service;
 
+import eos.lendy.global.storage.StorageService;
 import eos.lendy.product.dto.*;
 import eos.lendy.product.entity.ProductEntity;
 import eos.lendy.product.entity.ProductStatus;
@@ -10,6 +11,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -19,6 +21,7 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final StorageService storageService;
 
     @Transactional
     @Override
@@ -123,12 +126,33 @@ public class ProductServiceImpl implements ProductService {
         );
     }
 
+    @Transactional
     @Override
     public void delete(Long productId) {
         if (!productRepository.existsById(productId)) {
             throw new IllegalArgumentException("product not found");
         }
         productRepository.deleteById(productId);
+
+        // Best-effort cleanup for stored images
+        storageService.deleteProductFolder(productId);
+    }
+
+    @Transactional
+    @Override
+    public ProductThumbnailUploadResponse uploadThumbnail(Long productId, MultipartFile file) {
+        ProductEntity p = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("product not found"));
+
+        String url = storageService.storeProductThumbnail(productId, file);
+
+        p.update(
+                null, null, null, null, null, null,
+                url,
+                null
+        );
+
+        return new ProductThumbnailUploadResponse(productId, url);
     }
 
     private ProductListResponse toList(ProductEntity p) {

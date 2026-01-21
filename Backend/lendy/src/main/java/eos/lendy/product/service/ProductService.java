@@ -1,6 +1,7 @@
 package eos.lendy.product.service;
 
 import eos.lendy.product.dto.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -17,4 +18,6 @@ public interface ProductService {
     void update(Long productId, ProductUpdateRequest request);
 
     void delete(Long productId);
+
+    ProductThumbnailUploadResponse uploadThumbnail(Long productId, MultipartFile file);
 }
