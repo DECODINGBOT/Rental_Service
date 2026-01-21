@@ -4,5 +4,5 @@ import lombok.Getter;
 
 @Getter
 public class PaymentPrepareRequest {
-    private Long rentalId;
+    private Long transactionId;
 }
