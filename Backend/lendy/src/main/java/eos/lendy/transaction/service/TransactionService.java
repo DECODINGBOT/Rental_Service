@@ -15,4 +15,8 @@ public interface TransactionService {
     TransactionResponse startRental(Long transactionId, LocalDateTime startAt, LocalDateTime endAt);
 
     TransactionResponse returnProduct(Long transactionId);
+
+    TransactionResponse cancel(Long transactionId);
+
+    TransactionResponse cancelAfterRefund(Long transactionId);
 }

@@ -7,9 +7,6 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-/**
- * JPA entity representing a rental transaction.
- */
 @Entity
 @Table(name = "transactions")
 @Getter
@@ -22,25 +19,19 @@ public class TransactionEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Product being rented
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "product_id", nullable = false)
     private ProductEntity product;
 
-    // User who rents the product
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "renter_user_id", nullable = false)
     private UserEntity renter;
 
-    // Product owner
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_user_id", nullable = false)
     private UserEntity owner;
 
-    // Rental start date
     private LocalDateTime startAt;
-
-    // Rental end date
     private LocalDateTime endAt;
 
     @Enumerated(EnumType.STRING)
@@ -68,44 +59,46 @@ public class TransactionEntity {
         this.updatedAt = LocalDateTime.now();
     }
 
-    /**
-     * Accepts the rental request.
-     */
     public void accept() {
         if (this.status != TransactionStatus.REQUESTED) {
-            throw new IllegalStateException("Only requested transaction can be accepted");
+            throw new IllegalStateException("Only REQUESTED transactions can be accepted.");
         }
         this.status = TransactionStatus.ACCEPTED;
     }
 
-    /**
-     * Marks the transaction as paid.
-     */
     public void markPaid() {
         if (this.status != TransactionStatus.ACCEPTED) {
-            throw new IllegalStateException("Payment allowed only after acceptance");
+            throw new IllegalStateException("Payment is allowed only after acceptance (ACCEPTED).");
         }
         this.status = TransactionStatus.PAID;
     }
 
-    /**
-     * Starts the rental.
-     */
+    public void cancelBeforePayment() {
+        if (this.status != TransactionStatus.REQUESTED && this.status != TransactionStatus.ACCEPTED) {
+            throw new IllegalStateException("Only REQUESTED/ACCEPTED transactions can be canceled before payment.");
+        }
+        this.status = TransactionStatus.CANCELED;
+    }
+
+    public void cancelAfterRefund() {
+        if (this.status != TransactionStatus.PAID) {
+            throw new IllegalStateException("Only PAID transactions can be canceled after refund.");
+        }
+        this.status = TransactionStatus.CANCELED;
+    }
+
     public void startRental(LocalDateTime startAt, LocalDateTime endAt) {
         if (this.status != TransactionStatus.PAID) {
-            throw new IllegalStateException("Rental can start only after payment");
+            throw new IllegalStateException("Rental can start only after payment (PAID).");
         }
         this.startAt = startAt;
         this.endAt = endAt;
         this.status = TransactionStatus.RENTED;
     }
 
-    /**
-     * Completes the rental and marks the product as returned.
-     */
     public void returnProduct() {
         if (this.status != TransactionStatus.RENTED) {
-            throw new IllegalStateException("Only rented transaction can be returned");
+            throw new IllegalStateException("Only RENTED transactions can be returned.");
         }
         this.status = TransactionStatus.RETURNED;
     }

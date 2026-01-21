@@ -14,9 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
-/**
- * Implementation of rental transaction business logic.
- */
 @Service
 @RequiredArgsConstructor
 public class TransactionServiceImpl implements TransactionService {
@@ -96,6 +93,26 @@ public class TransactionServiceImpl implements TransactionService {
         tx.returnProduct();
         tx.getProduct().update(null, null, null, null, null, null, null, ProductStatus.AVAILABLE);
 
+        return toResponse(tx);
+    }
+
+    @Transactional
+    @Override
+    public TransactionResponse cancel(Long transactionId) {
+        TransactionEntity tx = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new IllegalArgumentException("transaction not found"));
+
+        tx.cancelBeforePayment();
+        return toResponse(tx);
+    }
+
+    @Transactional
+    @Override
+    public TransactionResponse cancelAfterRefund(Long transactionId) {
+        TransactionEntity tx = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new IllegalArgumentException("transaction not found"));
+
+        tx.cancelAfterRefund();
         return toResponse(tx);
     }
 

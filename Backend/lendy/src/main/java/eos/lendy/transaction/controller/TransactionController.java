@@ -7,9 +7,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 
-/**
- * REST controller for rental transaction APIs.
- */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/transactions")
@@ -23,15 +20,12 @@ public class TransactionController {
     }
 
     @PostMapping("/{id}/accept")
-    public TransactionResponse accept(
-            @PathVariable Long id,
-            @RequestBody TransactionAcceptRequest request
-    ) {
+    public TransactionResponse accept(@PathVariable Long id, @RequestBody TransactionAcceptRequest request) {
         return transactionService.accept(id, request);
     }
 
     @PostMapping("/{id}/pay")
-    public TransactionResponse pay(@PathVariable Long id) {
+    public TransactionResponse markPaid(@PathVariable Long id) {
         return transactionService.markPaid(id);
     }
 
@@ -47,5 +41,14 @@ public class TransactionController {
     @PostMapping("/{id}/return")
     public TransactionResponse returnProduct(@PathVariable Long id) {
         return transactionService.returnProduct(id);
+    }
+
+    /**
+     * Cancel before payment (REQUESTED/ACCEPTED).
+     * For post-payment refund, use /api/payments/cancel and the server will propagate cancelAfterRefund.
+     */
+    @PostMapping("/{id}/cancel")
+    public TransactionResponse cancel(@PathVariable Long id, @RequestBody(required = false) TransactionCancelRequest req) {
+        return transactionService.cancel(id);
     }
 }
