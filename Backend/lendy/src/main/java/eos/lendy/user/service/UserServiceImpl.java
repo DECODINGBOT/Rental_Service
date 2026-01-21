@@ -1,5 +1,7 @@
 package eos.lendy.user.service;
 
+import eos.lendy.auth.dto.LoginRequest;
+import eos.lendy.auth.dto.SignUpRequest;
 import eos.lendy.global.common.FileStorageService;
 import eos.lendy.user.dto.*;
 import eos.lendy.user.entity.UserEntity;
@@ -19,7 +21,7 @@ public class UserServiceImpl implements UserService{
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final FileStorageService fileStorageService;
-
+    /*
     @Override
     public UserResponse signUp(SignUpRequest request) {
         String username = normalize(request.username());
@@ -54,6 +56,7 @@ public class UserServiceImpl implements UserService{
 
         return new UserResponse(user.getId(), user.getUsername(), user.getCreatedAt());
     }
+     */
 
     @Override
     public UserProfileResponse getProfile(Long id) {
