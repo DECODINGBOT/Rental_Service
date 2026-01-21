@@ -1,12 +1,14 @@
 package eos.lendy.payment.service;
 
 import eos.lendy.payment.client.TossPaymentsClient;
-import eos.lendy.payment.dto.PaymentConfirmRequest;
-import eos.lendy.payment.dto.PaymentConfirmResponse;
-import eos.lendy.payment.dto.PaymentPrepareResponse;
+import eos.lendy.payment.dto.*;
 import eos.lendy.payment.entity.PaymentEntity;
 import eos.lendy.payment.entity.PaymentStatus;
 import eos.lendy.payment.repository.PaymentRepository;
+import eos.lendy.transaction.entity.TransactionEntity;
+import eos.lendy.transaction.entity.TransactionStatus;
+import eos.lendy.transaction.repository.TransactionRepository;
+import eos.lendy.transaction.service.TransactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,9 +22,26 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final TossPaymentsClient tossPaymentsClient;
 
-    public PaymentPrepareResponse prepare(Long rentalId) {
+    // Needed to validate transaction state during prepare/cancel
+    private final TransactionRepository transactionRepository;
 
-        // TODO: 나중에 rental 도메인에서 실제 금액 가져오기
+    // Needed to propagate payment outcomes to transaction state transitions
+    private final TransactionService transactionService;
+
+    /**
+     * Prepare a payment (issue orderId, lock amount, persist READY payment)
+     */
+    @Transactional
+    public PaymentPrepareResponse prepare(Long transactionId) {
+
+        TransactionEntity tx = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new IllegalArgumentException("transactionId does not exist."));
+
+        if (tx.getStatus() != TransactionStatus.ACCEPTED) {
+            throw new IllegalStateException("Payment can be prepared only when transaction is ACCEPTED. Current=" + tx.getStatus());
+        }
+
+        // TODO: Replace with real pricing logic (duration-based rent fee, deposit policy, etc.)
         long rentFee = 10000L;
         long deposit = 5000L;
         long totalAmount = rentFee + deposit;
@@ -33,7 +52,7 @@ public class PaymentService {
                 .orderId(orderId)
                 .amount(totalAmount)
                 .status(PaymentStatus.READY)
-                .rentalId(rentalId)
+                .transactionId(transactionId)
                 .build();
 
         paymentRepository.save(payment);
@@ -41,18 +60,24 @@ public class PaymentService {
         return new PaymentPrepareResponse(orderId, totalAmount);
     }
 
+    /**
+     * Confirm payment
+     * - Toss confirm succeeds
+     * - Payment -> CONFIRMED
+     * - Transaction -> PAID (propagated)
+     */
     @Transactional
     public PaymentConfirmResponse confirm(PaymentConfirmRequest req) {
 
         PaymentEntity payment = paymentRepository.findByOrderId(req.getOrderId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 orderId 입니다."));
+                .orElseThrow(() -> new IllegalArgumentException("orderId does not exist."));
 
-        // 조작 방지: 서버에 저장된 금액과 FE가 준 amount가 같아야 함
+        // Anti-tampering: FE amount must match server-stored amount
         if (!payment.getAmount().equals(req.getAmount())) {
-            throw new IllegalArgumentException("amount가 일치하지 않습니다.");
+            throw new IllegalArgumentException("amount mismatch.");
         }
 
-        // 중복 승인 방지(이미 승인된 주문이면 그대로 반환)
+        // Idempotency: if already confirmed, return as-is
         if (payment.getStatus() == PaymentStatus.CONFIRMED) {
             return new PaymentConfirmResponse(
                     payment.getOrderId(),
@@ -62,13 +87,70 @@ public class PaymentService {
             );
         }
 
-        // 토스 승인 호출 (성공해야 아래로 내려옴)
+        if (payment.getStatus() != PaymentStatus.READY) {
+            throw new IllegalStateException("Only READY payments can be confirmed. Current=" + payment.getStatus());
+        }
+
+        // Toss confirm must succeed before we mutate DB state
         tossPaymentsClient.confirm(req.getPaymentKey(), req.getOrderId(), req.getAmount());
 
-        // 토스 승인 성공 시에만 DB 상태 변경
         payment.confirm(req.getPaymentKey());
 
+        // Propagate to transaction state
+        transactionService.markPaid(payment.getTransactionId());
+
         return new PaymentConfirmResponse(
+                payment.getOrderId(),
+                payment.getPaymentKey(),
+                payment.getAmount(),
+                payment.getStatus().name()
+        );
+    }
+
+    /**
+     * Cancel payment (refund)
+     * - Payment must be CONFIRMED
+     * - Transaction must be PAID (full refund allowed only before rental starts)
+     * - Toss cancel succeeds
+     * - Payment -> CANCELED
+     * - Transaction -> CANCELED (propagated)
+     */
+    @Transactional
+    public PaymentCancelResponse cancel(PaymentCancelRequest req) {
+
+        PaymentEntity payment = paymentRepository.findByOrderId(req.getOrderId())
+                .orElseThrow(() -> new IllegalArgumentException("orderId does not exist."));
+
+        if (payment.getStatus() == PaymentStatus.CANCELED) {
+            return new PaymentCancelResponse(
+                    payment.getOrderId(),
+                    payment.getPaymentKey(),
+                    payment.getAmount(),
+                    payment.getStatus().name()
+            );
+        }
+
+        if (payment.getStatus() != PaymentStatus.CONFIRMED) {
+            throw new IllegalStateException("Only CONFIRMED payments can be canceled. Current=" + payment.getStatus());
+        }
+
+        TransactionEntity tx = transactionRepository.findById(payment.getTransactionId())
+                .orElseThrow(() -> new IllegalArgumentException("transaction not found."));
+
+        // Policy: allow full refund only before rental starts (PAID)
+        if (tx.getStatus() != TransactionStatus.PAID) {
+            throw new IllegalStateException("Refund allowed only when transaction is PAID. Current=" + tx.getStatus());
+        }
+
+        // Toss cancel must succeed before we mutate DB state
+        tossPaymentsClient.cancel(payment.getPaymentKey(), req.getCancelReason(), payment.getAmount());
+
+        payment.cancel();
+
+        // Propagate to transaction state
+        transactionService.cancelAfterRefund(payment.getTransactionId());
+
+        return new PaymentCancelResponse(
                 payment.getOrderId(),
                 payment.getPaymentKey(),
                 payment.getAmount(),
