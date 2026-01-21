@@ -18,9 +18,28 @@ class _LoginPageState extends State<LoginPage> {
   TextEditingController passwordController = TextEditingController();
 
   @override
+  void initState(){
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final auth = context.read<AuthService>();
+      final ok = await auth.tryAutoLogin();
+      if(!mounted){
+        return;
+      }
+      if(ok){
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const MainShell()),
+                (route) => false,
+        );
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<AuthService>(builder: (context, authService, child) {
-      final user = authService.currentUser();
+      //final user = authService.currentUser();
       return Scaffold(
         appBar: PreferredSize(
           preferredSize: Size.fromHeight(100),
@@ -89,11 +108,13 @@ class _LoginPageState extends State<LoginPage> {
               signInButton(authService),
               const SizedBox(height: 12),
               signUpButton(),
+              /*
               const SizedBox(height: 100),
               signInWithGoogle(),
               const SizedBox(height: 12),
               signInWithKakao(),
               const SizedBox(height: 12),
+               */
             ],
           )
         );
@@ -207,7 +228,8 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-  
+
+  /*
   Widget signInWithGoogle() {
     return SizedBox(
       width: double.infinity,
@@ -293,4 +315,5 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
+   */
 }
