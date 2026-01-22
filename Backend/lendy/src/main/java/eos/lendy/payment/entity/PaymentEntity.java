@@ -10,27 +10,40 @@ import lombok.*;
 @Builder
 public class PaymentEntity {
 
-    @Id @GeneratedValue
+    @Id
+    @GeneratedValue
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String orderId;       // 우리 시스템 주문 ID
+    private String orderId;       // Internal order ID
 
-    private String paymentKey;    // 토스 결제 키
+    private String paymentKey;    // Toss payment key
 
-    private Long amount;          // 총 결제 금액 (대여비 + 보증금)
+    private Long amount;          // Total amount (rent fee + deposit)
 
     @Enumerated(EnumType.STRING)
     private PaymentStatus status; // READY, CONFIRMED, CANCELED
 
-    private Long rentalId;        // 어떤 대여에 대한 결제인지
+    /**
+     * The transaction this payment belongs to.
+     * In this project, Transaction is the single source of truth for the rental lifecycle,
+     * so Payment references transactionId.
+     */
+    @Column(nullable = false)
+    private Long transactionId;
 
     public void confirm(String paymentKey) {
         if (this.status != PaymentStatus.READY) {
-            throw new IllegalStateException("READY 상태만 승인할 수 있습니다.");
+            throw new IllegalStateException("Only READY payments can be confirmed.");
         }
         this.paymentKey = paymentKey;
         this.status = PaymentStatus.CONFIRMED;
     }
-}
 
+    public void cancel() {
+        if (this.status != PaymentStatus.CONFIRMED) {
+            throw new IllegalStateException("Only CONFIRMED payments can be canceled.");
+        }
+        this.status = PaymentStatus.CANCELED;
+    }
+}

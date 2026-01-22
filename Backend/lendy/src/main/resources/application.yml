@@ -47,3 +47,14 @@ app:
 
 tosspayments:
   secret-key: ${TOSS_SECRET_KEY}
+
+  storage:
+    root-location: ./storage
+    public-url-prefix: /storage
+
+  spring:
+    servlet:
+      multipart:
+        max-file-size: 10MB
+        max-request-size: 10MB
+
