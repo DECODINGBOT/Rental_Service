@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:sharing_items/src/api_config.dart';
+import 'package:sharing_items/src/service/api_client.dart';
+import 'package:sharing_items/src/service/token_storage.dart';
 
 class CommunityListItemDto{
   final int id;
@@ -136,10 +138,11 @@ class LikeToggleResponse{
 
 class CommunityService{
   final _baseUrl = ApiConfig.baseUrl;
+  final http.Client _client = ApiClient.authed;
 
   Future<List<CommunityListItemDto>> fetchBoards() async {
     final uri = Uri.parse('$_baseUrl/api/boards');
-    final res = await http.get(
+    final res = await _client.get(
       uri,
       headers: {'Accept': "application/json"}
     );
@@ -166,7 +169,7 @@ class CommunityService{
     if(userId != null) qp['userId'] = userId.toString();
 
     final uri = Uri.parse('$_baseUrl/api/boards/$boardId').replace(queryParameters: qp);
-    final res = await http.get(
+    final res = await _client.get(
       uri,
       headers: {'Accept': 'application/json'},
     );
@@ -191,6 +194,11 @@ class CommunityService{
   }) async {
     final uri = Uri.parse('$_baseUrl/api/boards');
     final req = http.MultipartRequest('POST', uri);
+    final access = await TokenStorage().readAccessToken();
+    if(access != null && access.isNotEmpty){
+      req.headers['Authorization'] = 'Bearer $access';
+    }
+
     final requestJson = jsonEncode({
       'title': title,
       'content': content,
@@ -233,7 +241,7 @@ class CommunityService{
     required String content,
   }) async {
     final uri = Uri.parse('$_baseUrl/api/boards/$boardId/comments');
-    final res = await http.post(
+    final res = await _client.post(
       uri,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
@@ -259,7 +267,7 @@ class CommunityService{
     required int userId
   }) async {
     final uri = Uri.parse('$_baseUrl/api/boards/$boardId/likes/toggle');
-    final res = await http.post(
+    final res = await _client.post(
       uri,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'userId': userId}),

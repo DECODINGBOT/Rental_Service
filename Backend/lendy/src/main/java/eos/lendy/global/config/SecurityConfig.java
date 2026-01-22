@@ -33,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/h2-console/**",
                                 "/uploads/**",
+                                "/storage/**",
                                 "/api/auth/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",

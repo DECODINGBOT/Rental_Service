@@ -15,22 +15,19 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String urlPattern = storageProperties.getPublicUrlPrefix() + "/**";
+        String productUrlPattern = storageProperties.getPublicUrlPrefix() + "/**";
+        Path productRoot = Path.of(storageProperties.getRootLocation()).toAbsolutePath().normalize();
+        String productLocation = productRoot.toUri().toString(); // "file:/.../storage/"
 
-        Path root = Path.of(storageProperties.getRootLocation()).toAbsolutePath().normalize();
-        String location = root.toUri().toString(); // "file:/.../storage/"
-
-        registry.addResourceHandler(urlPattern)
-                .addResourceLocations(location)
+        registry.addResourceHandler(productUrlPattern)
+                .addResourceLocations(productLocation)
                 .setCachePeriod(3600);
 
-        /*
-        String uploadPath = Paths.get("uploads").toAbsolutePath().toUri().toString();
-        if(!uploadPath.endsWith("/")){
-            uploadPath += "/";
-        }
+        Path uploadRoot = Path.of("uploads").toAbsolutePath().normalize();
+        String uploadLocation = uploadRoot.toUri().toString();
+
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations(uploadPath);
-        */
+                .addResourceLocations(uploadLocation)
+                .setCachePeriod(3600);
     }
 }

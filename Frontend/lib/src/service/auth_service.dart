@@ -76,7 +76,7 @@ class AuthService extends ChangeNotifier {
 
   /// 앱 시작 시 호출: 저장된 refreshToken으로 accessToken 갱신 + 세션 복원
   Future<bool> tryAutoLogin() async {
-    final refresh = await _storage.readAccessToken();
+    final refresh = await _storage.readRefreshToken();
     final storedUser = await _storage.readUser();
     if(refresh == null || refresh.isEmpty || storedUser == null){
       return false;
@@ -256,7 +256,7 @@ class AuthService extends ChangeNotifier {
     final access = await _storage.readAccessToken();
     final req = http.MultipartRequest('POST', uri);
     if(access != null && access.isNotEmpty){
-      req.headers['Authorizaion'] = 'Bearer $access';
+      req.headers['Authorization'] = 'Bearer $access';
     }
     req.files.add(await http.MultipartFile.fromPath('image', file.path));
     final streamed = await _rawClient.send(req);

@@ -53,7 +53,7 @@ class AuthClient extends http.BaseClient{
   }
 
   Future<bool> _tryRefreshAccessToken() async {
-    final refresh = await _storage.readAccessToken();
+    final refresh = await _storage.readRefreshToken();
     if(refresh == null || refresh.isEmpty){
       return false;
     }
@@ -61,7 +61,7 @@ class AuthClient extends http.BaseClient{
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/refresh');
     final res = await _inner.post(
       uri,
-      headers: {'Content_Type': 'application/json'},
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'refreshToken': refresh})
     );
     if(res.statusCode < 200 || res.statusCode >= 300){
