@@ -10,9 +10,9 @@ import java.util.Optional;
 
 public interface BoardLikeRepository extends JpaRepository<BoardLikeEntity, Long> {
     long countByBoard_Id(Long boardId);
-    Optional<BoardLikeEntity> findByBoard_IdAndUsername(Long boardId, String username);
-    boolean existsByBoard_IdAndUsername(Long boardId, String username);
-    void deleteByBoard_IdAndUsername(Long boardId, String username);
+    Optional<BoardLikeEntity> findByBoard_IdAndUser_Id(Long boardId, Long userId);
+    boolean existsByBoard_IdAndUser_Id(Long boardId, Long userId);
+    void deleteByBoard_IdAndUser_Id(Long boardId, Long userId);
 
     @Query("""
             select bl.board.id as boardId, count(bl) as cnt

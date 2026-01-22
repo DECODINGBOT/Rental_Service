@@ -1,5 +1,6 @@
 package eos.lendy.community.entity;
 
+import eos.lendy.user.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -9,8 +10,6 @@ import java.time.LocalDateTime;
 @Table(name = "board_comments")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
 public class CommentEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,8 +19,9 @@ public class CommentEntity {
     @JoinColumn(name = "board_id", nullable = false)
     private CommunityEntity board;
 
-    @Column(nullable = false)
-    private String username;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
 
     @Lob
     @Column(nullable = false)
@@ -29,6 +29,13 @@ public class CommentEntity {
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
+
+    @Builder
+    public CommentEntity(CommunityEntity board, UserEntity user, String content){
+        this.board = board;
+        this.user = user;
+        this.content = content;
+    }
 
     @PrePersist
     void onCreate(){

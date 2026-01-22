@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'chat_room_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -21,11 +22,7 @@ class _ChatScreenState extends State<ChatScreen> {
           titleSpacing: 16,
           title: Row(
             children: [
-              const Icon(
-                Icons.chat,
-                color: Colors.black,
-                size: 32,
-              ),
+              const Icon(Icons.chat, color: Colors.black, size: 32),
               const SizedBox(width: 8),
               const Text(
                 '채팅',
@@ -42,25 +39,42 @@ class _ChatScreenState extends State<ChatScreen> {
                 onPressed: () {
                   //TODO: 검색버튼 동작->닉네임 검색
                 },
-                icon: const Icon(
-                  Icons.search,
-                  color: Colors.black,
-                  size: 28,
-                ),
+                icon: const Icon(Icons.search, color: Colors.black, size: 28),
               ),
             ],
           ),
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(1),
-            child: Container(
-              height: 1,
-              color: Colors.black,
-            ),
+            child: Container(height: 1, color: Colors.black),
           ),
         ),
       ),
-      
-      //TODO: body 부분 구현
+
+      body: ListView(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: const Text('아이디'),
+            subtitle: const Text('여기에는 마지막 채팅 내용 미리보기...'),
+            trailing: const CircleAvatar(
+              radius: 10,
+              backgroundColor: Colors.red,
+              child: Text(
+                '1',
+                style: TextStyle(fontSize: 12, color: Colors.white),
+              ),
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ChatRoomScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }

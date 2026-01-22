@@ -1,5 +1,6 @@
 package eos.lendy.community.entity;
 
+import eos.lendy.user.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -8,13 +9,11 @@ import lombok.*;
         name = "board_likes",
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_board_user_like",
-                columnNames = {"board_id", "username"}
+                columnNames = {"board_id", "user_id"}
         )
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
 public class BoardLikeEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,6 +23,13 @@ public class BoardLikeEntity {
     @JoinColumn(name = "board_id", nullable = false)
     private CommunityEntity board;
 
-    @Column(nullable = false)
-    private String username;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
+
+    @Builder
+    public BoardLikeEntity(CommunityEntity board, UserEntity user){
+        this.board = board;
+        this.user = user;
+    }
 }

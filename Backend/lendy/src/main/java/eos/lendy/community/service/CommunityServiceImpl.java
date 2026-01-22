@@ -1,19 +1,16 @@
 package eos.lendy.community.service;
 
 import eos.lendy.community.dto.*;
-import eos.lendy.community.entity.BoardLikeEntity;
-import eos.lendy.community.entity.CommentEntity;
-import eos.lendy.community.entity.CommunityEntity;
-import eos.lendy.community.repository.BoardCountProjection;
-import eos.lendy.community.repository.BoardLikeRepository;
-import eos.lendy.community.repository.CommentRepository;
-import eos.lendy.community.repository.CommunityRepository;
+import eos.lendy.community.entity.*;
+import eos.lendy.community.repository.*;
+import eos.lendy.global.common.FileStorageService;
 import eos.lendy.user.entity.UserEntity;
 import eos.lendy.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -27,44 +24,50 @@ public class CommunityServiceImpl implements CommunityService {
     private final CommentRepository commentRepository;
     private final BoardLikeRepository boardLikeRepository;
     private final UserRepository userRepository;
+    private final FileStorageService fileStorageService;
 
     @Transactional
     @Override
-    public CommunityDetailResponse create(CommunityRequest request) {
+    public CommunityDetailResponse create(CommunityRequest request, List<MultipartFile> images) {
         String title = normalize(request.title());
         String content = normalize(request.content());
         Long userId = request.userId();
 
-        if(title == null || title.isBlank()){
-            throw new IllegalArgumentException("title is required");
-        }
-        if(content == null || content.isBlank()){
-            throw new IllegalArgumentException("content is required");
-        }
-        if(userId == null){
-            throw new IllegalArgumentException("userId is required");
-        }
-
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("user not found"));
 
-        CommunityEntity saved = communityRepository.save(
+        CommunityEntity board = communityRepository.save(
                 CommunityEntity.builder()
                         .title(title)
                         .content(content)
                         .user(user)
                         .build()
         );
-        return toDetail(saved, 0, 0, List.of());
+
+        if(images != null){
+            for(MultipartFile file : images){
+                String url = fileStorageService.save(file);
+                board.getImages().add(
+                        BoardImageEntity.builder().board(board).imageUrl(url).build()
+                );
+            }
+        }
+
+        return toDetail(board, 0, 0, false, List.of());
     }
 
     @Override
-    public CommunityDetailResponse read(Long id) {
+    public CommunityDetailResponse read(Long id, Long userId) {
         CommunityEntity communityEntity = communityRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("board not found"));
 
         long likeCount = boardLikeRepository.countByBoard_Id(id);
         long commentCount = commentRepository.countByBoard_Id(id);
+
+        boolean liked = false;
+        if(userId != null){
+            liked = boardLikeRepository.existsByBoard_IdAndUser_Id(id, userId);
+        }
 
         List<CommentResponse> comments = commentRepository.findByBoard_Id(
                 id, Sort.by(Sort.Direction.DESC, "createdAt"))
@@ -72,7 +75,7 @@ public class CommunityServiceImpl implements CommunityService {
                 .map(this::toCommentResponse)
                 .toList();
 
-        return toDetail(communityEntity, likeCount, commentCount, comments);
+        return toDetail(communityEntity, likeCount, commentCount, liked, comments);
     }
 
     @Override
@@ -98,16 +101,6 @@ public class CommunityServiceImpl implements CommunityService {
                         likeCounts.getOrDefault(b.getId(), 0L),
                         commentCounts.getOrDefault(b.getId(), 0L)
                 )).toList();
-        /*
-        return communityRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
-                .stream()
-                .map(e -> {
-                    long likeCount = boardLikeRepository.countByBoard_Id(e.getId());
-                    long commentCount = commentRepository.countByBoard_Id(e.getId());
-                    return toList(e, likeCount, commentCount);
-                })
-                .toList();
-         */
     }
 
     @Transactional
@@ -142,11 +135,11 @@ public class CommunityServiceImpl implements CommunityService {
     @Transactional
     @Override
     public CommentResponse addComment(Long boardId, CommentCreateRequest request) {
-        String username = normalize(request.username());
+        Long userId = request.userId();
         String content = normalize(request.content());
 
-        if(username == null || username.isBlank()){
-            throw new IllegalArgumentException("username is required");
+        if(userId == null){
+            throw new IllegalArgumentException("userId is required");
         }
         if(content == null || content.isBlank()){
             throw new IllegalArgumentException("content is required");
@@ -155,10 +148,13 @@ public class CommunityServiceImpl implements CommunityService {
         CommunityEntity board = communityRepository.findById(boardId)
                 .orElseThrow(() -> new IllegalArgumentException("board not found"));
 
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+
         CommentEntity saved = commentRepository.save(
                 CommentEntity.builder()
                         .board(board)
-                        .username(username)
+                        .user(user)
                         .content(content)
                         .build()
         );
@@ -179,24 +175,26 @@ public class CommunityServiceImpl implements CommunityService {
 
     @Transactional
     @Override
-    public LikeToggleResponse toggleLike(Long boardId, String usernameRaw) {
-        String username = normalize(usernameRaw);
-        if(username == null || username.isBlank()){
-            throw new IllegalArgumentException("username is required");
+    public LikeToggleResponse toggleLike(Long boardId, Long userId) {
+        if(userId == null){
+            throw new IllegalArgumentException("userId is required");
         }
 
         CommunityEntity board = communityRepository.findById(boardId)
                 .orElseThrow(() -> new IllegalArgumentException("board not found"));
 
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+
         boolean liked;
-        if(boardLikeRepository.existsByBoard_IdAndUsername(boardId, username)){
-            boardLikeRepository.deleteByBoard_IdAndUsername(boardId, username);
+        if(boardLikeRepository.existsByBoard_IdAndUser_Id(boardId, userId)){
+            boardLikeRepository.deleteByBoard_IdAndUser_Id(boardId, userId);
             liked = false;
         }else{
             boardLikeRepository.save(
                     BoardLikeEntity.builder()
                             .board(board)
-                            .username(username)
+                            .user(user)
                             .build()
             );
             liked = true;
@@ -228,7 +226,12 @@ public class CommunityServiceImpl implements CommunityService {
         );
     }
 
-    private CommunityDetailResponse toDetail(CommunityEntity communityEntity, long likeCount, long commentCount, List<CommentResponse> comments){
+    private CommunityDetailResponse toDetail(CommunityEntity communityEntity, long likeCount, long commentCount, boolean liked, List<CommentResponse> comments){
+        List<String> imageUrls = communityEntity.getImages()
+                .stream()
+                .map(BoardImageEntity::getImageUrl)
+                .toList();
+
         return new CommunityDetailResponse(
                 communityEntity.getId(),
                 communityEntity.getTitle(),
@@ -239,14 +242,18 @@ public class CommunityServiceImpl implements CommunityService {
                 communityEntity.getUpdatedAt(),
                 likeCount,
                 commentCount,
-                comments
+                liked,
+                comments,
+                imageUrls
         );
     }
 
     private CommentResponse toCommentResponse(CommentEntity commentEntity){
         return new CommentResponse(
                 commentEntity.getId(),
-                commentEntity.getUsername(),
+                commentEntity.getUser().getId(),
+                commentEntity.getUser().getUsername(),
+                commentEntity.getUser().getProfileImageUrl(),
                 commentEntity.getContent(),
                 commentEntity.getCreatedAt()
         );

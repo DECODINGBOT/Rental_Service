@@ -13,6 +13,8 @@ public record CommunityDetailResponse(
         LocalDateTime updatedAt,
         long likeCount,
         long commentCount,
-        List<CommentResponse> comments
+        boolean liked,
+        List<CommentResponse> comments,
+        List<String> imageUrls
 ) {
 }

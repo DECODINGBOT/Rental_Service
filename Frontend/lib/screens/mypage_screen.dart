@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:sharing_items/screens/login_screen.dart';
 import 'package:sharing_items/screens/write_screen.dart';
 import 'package:sharing_items/screens/edit_myinfo_screen.dart';
+import 'package:sharing_items/src/api_config.dart';
 import 'package:sharing_items/src/service/auth_service.dart';
 
 class MyPageScreen extends StatefulWidget {
@@ -57,6 +58,20 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
   String _dateText(DateTime d) =>
       "${d.year}.${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}";
+
+  ///***********************
+  ///
+  final baseUrl = ApiConfig.baseUrl;
+  bool isServerPath(String s) => s.startsWith('/uploads/');
+  String absUrl(String urlOrPath){
+    if(urlOrPath.isEmpty) return urlOrPath;
+    if(urlOrPath.startsWith('http://') || urlOrPath.startsWith('https://')){
+      return urlOrPath;
+    }
+    return '$baseUrl$urlOrPath';
+  }
+  ///
+  /// ************************
 
   @override
   void initState() {
@@ -228,6 +243,60 @@ class _MyPageScreenState extends State<MyPageScreen> {
                 );
               }
               final url = profileImageUrl!;
+              /// 1) 서버 업로드 경로
+              if(isServerPath(url)){
+                return Image.network(
+                  absUrl(url),
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 64,
+                    height: 64,
+                    color: Colors.white,
+                    child: const Icon(Icons.person, size: 40, color: Colors.black),
+                  ),
+                );
+              }
+              /// 2) 완전한 http(s)
+              if(url.startsWith('http://') || url.startsWith('https://')){
+                return Image.network(
+                  url,
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 64,
+                    height: 64,
+                    color: Colors.white,
+                    child: const Icon(Icons.person, size: 40, color: Colors.black),
+                  ),
+                );
+              }
+              /// 3) 로컬 file://
+              if(url.startsWith('file://')){
+                final loaclPath = url.substring('file://'.length);
+                return Image.file(
+                  File(loaclPath),
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 64,
+                    height: 64,
+                    color: Colors.white,
+                    child: const Icon(Icons.person, size: 40, color: Colors.black),
+                  ),
+                );
+              }
+              /// 4) 그 외는 기본 아이콘
+              return Container(
+                width: 64,
+                height: 64,
+                color: Colors.white,
+                child: const Icon(Icons.person, size: 40, color: Colors.black),
+              );
+              /*
               if (url.startsWith('http')) {
                 return Image.network(
                   url,
@@ -244,6 +313,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                   fit: BoxFit.cover,
                 );
               }
+              */
             }(),
           ),
           const SizedBox(width: 16),

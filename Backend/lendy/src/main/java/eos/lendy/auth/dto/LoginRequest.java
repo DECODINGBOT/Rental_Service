@@ -1,4 +1,4 @@
-package eos.lendy.user.dto;
+package eos.lendy.auth.dto;
 
 public record LoginRequest (
         String username,

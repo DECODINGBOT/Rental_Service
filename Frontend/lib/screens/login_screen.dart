@@ -18,15 +18,35 @@ class _LoginPageState extends State<LoginPage> {
   TextEditingController passwordController = TextEditingController();
 
   @override
+  void initState(){
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final auth = context.read<AuthService>();
+      final ok = await auth.tryAutoLogin();
+      if(!mounted){
+        return;
+      }
+      if(ok){
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const MainShell()),
+                (route) => false,
+        );
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<AuthService>(builder: (context, authService, child) {
-      final user = authService.currentUser();
+      //final user = authService.currentUser();
       return Scaffold(
         appBar: PreferredSize(
           preferredSize: Size.fromHeight(100),
           child: AppBar(
             backgroundColor: Colors.white,
             centerTitle: true,
+            automaticallyImplyLeading: false,
             title: Padding(
               padding: EdgeInsets.symmetric(vertical: 8.0),
               child: Text(
@@ -88,11 +108,13 @@ class _LoginPageState extends State<LoginPage> {
               signInButton(authService),
               const SizedBox(height: 12),
               signUpButton(),
+              /*
               const SizedBox(height: 100),
               signInWithGoogle(),
               const SizedBox(height: 12),
               signInWithKakao(),
               const SizedBox(height: 12),
+               */
             ],
           )
         );
@@ -135,9 +157,10 @@ class _LoginPageState extends State<LoginPage> {
               ));
               // MainShell로 이동
               
-              Navigator.pushReplacement(
+              Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => MainShell()),
+                MaterialPageRoute(builder: (_) => const MainShell()),
+                    (route) => false,
               );
               
               //Navigator.pushReplacementNamed(context, '/home');
@@ -145,7 +168,8 @@ class _LoginPageState extends State<LoginPage> {
             onError: (err) {
               // 에러 발생
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text('아이디와 비밀번호를 정확하게 입력해주세요.'),
+                content: Text(err),
+                //content: Text('아이디와 비밀번호를 정확하게 입력해주세요.'),
               ));
             },
           );
@@ -205,7 +229,8 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-  
+
+  /*
   Widget signInWithGoogle() {
     return SizedBox(
       width: double.infinity,
@@ -291,4 +316,5 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
+   */
 }

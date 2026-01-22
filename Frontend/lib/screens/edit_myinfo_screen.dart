@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:sharing_items/src/api_config.dart';
 import 'package:sharing_items/src/service/auth_service.dart';
 
 class EditMyInfoScreen extends StatefulWidget {
@@ -51,6 +52,20 @@ class _EditMyInfoScreenState extends State<EditMyInfoScreen> {
   final ImagePicker _picker = ImagePicker();
   XFile? _pickedProfile; // 새로 고른 로컬 이미지
   bool _saving = false; // 저장 중 인디케이터
+
+  ///***********************
+  ///
+  final baseUrl = ApiConfig.baseUrl;
+  bool isServerPath(String s) => s.startsWith('/uploads/');
+  String absUrl(String urlOrPath){
+    if(urlOrPath.isEmpty) return urlOrPath;
+    if(urlOrPath.startsWith('http://') || urlOrPath.startsWith('https://')){
+      return urlOrPath;
+    }
+    return '$baseUrl$urlOrPath';
+  }
+  ///
+  /// ************************
 
   @override
   void initState() {
@@ -179,6 +194,7 @@ class _EditMyInfoScreenState extends State<EditMyInfoScreen> {
 
     setState(() => _saving = true);
 
+    /*
     String? finalProfileUrl = _profileImageUrl;
 
     if (_pickedProfile != null) {
@@ -197,14 +213,20 @@ class _EditMyInfoScreenState extends State<EditMyInfoScreen> {
     }
 
     setState(() => _saving = false);
-
-    ///
-    ///
-    ///
+     */
 
     final auth = context.read<AuthService>();
 
     try{
+      String? finalProfileUrl = _profileImageUrl;
+
+      if(_pickedProfile != null){
+        final uploaded = await auth.uploadMyProfileImage(File(_pickedProfile!.path));
+        finalProfileUrl = uploaded.profileImageUrl;
+        _profileImageUrl = finalProfileUrl;
+        //_profileImageUrl = uploaded.profileImageUrl;
+      }
+
       final updated = await auth.updateMyProfile(
         profileImageUrl: finalProfileUrl,
         address: _addrCtrl.text.trim(),
@@ -216,7 +238,6 @@ class _EditMyInfoScreenState extends State<EditMyInfoScreen> {
       if(!mounted) return;
 
       Navigator.pop(context, {
-        //'joinDate': updated.createdAt.toIso8601String(),
         'address': updated.address ?? '',
         'detailAddress': updated.detailAddress ?? '',
         'phone': updated.phone ?? '',
@@ -284,12 +305,58 @@ class _EditMyInfoScreenState extends State<EditMyInfoScreen> {
                           borderRadius: BorderRadius.circular(12),
                           child: Builder(
                             builder: (_) {
+                              /// 1) 새로 고른 사진이면 로컬 미리보기
                               if (_pickedProfile != null) {
                                 return Image.file(
                                   File(_pickedProfile!.path),
                                   fit: BoxFit.cover,
                                 );
                               }
+
+                              final url = _profileImageUrl;
+                              /// 2) 없으면 기본 아이콘
+                              if(url == null || url.isEmpty){
+                                return const Icon(
+                                  Icons.person,
+                                  size: 40,
+                                  color: Colors.black87,
+                                );
+                              }
+
+                              /// 3) 서버 업로드 경로면 네트워크
+                              if(isServerPath(url)){
+                                return Image.network(
+                                  absUrl(url),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.person, size: 40, color: Colors.black87,),
+                                );
+                              }
+
+                              /// 4) 완전한 http(s)
+                              if(url.startsWith('http://') || url.startsWith('https://')){
+                                return Image.network(
+                                  url,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.person, size: 40, color: Colors.black87),
+                                );
+                              }
+
+                              /// 5) file:// 로컬경로
+                              if(url.startsWith('file://')){
+                                final localPath = url.substring('file://'.length);
+                                return Image.file(
+                                  File(localPath),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.person, size: 40, color: Colors.black87),
+                                );
+                              }
+                              ///
+                              /// 6) 나머지는 기본 아이콘
+                              return const Icon(Icons.person, size: 40, color: Colors.black87);
+                              /*
                               if (_profileImageUrl != null &&
                                   _profileImageUrl!.isNotEmpty) {
                                 if (_profileImageUrl!.startsWith('http')) {
@@ -309,6 +376,7 @@ class _EditMyInfoScreenState extends State<EditMyInfoScreen> {
                                   );
                                 }
                               }
+                              */
                               return const Icon(
                                 Icons.person,
                                 size: 40,

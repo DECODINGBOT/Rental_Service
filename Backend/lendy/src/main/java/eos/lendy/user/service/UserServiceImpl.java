@@ -1,5 +1,8 @@
 package eos.lendy.user.service;
 
+import eos.lendy.auth.dto.LoginRequest;
+import eos.lendy.auth.dto.SignUpRequest;
+import eos.lendy.global.common.FileStorageService;
 import eos.lendy.user.dto.*;
 import eos.lendy.user.entity.UserEntity;
 import eos.lendy.user.repository.UserRepository;
@@ -7,6 +10,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 
@@ -16,7 +20,8 @@ public class UserServiceImpl implements UserService{
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
+    private final FileStorageService fileStorageService;
+    /*
     @Override
     public UserResponse signUp(SignUpRequest request) {
         String username = normalize(request.username());
@@ -51,6 +56,7 @@ public class UserServiceImpl implements UserService{
 
         return new UserResponse(user.getId(), user.getUsername(), user.getCreatedAt());
     }
+     */
 
     @Override
     public UserProfileResponse getProfile(Long id) {
@@ -72,6 +78,26 @@ public class UserServiceImpl implements UserService{
                 request.bio()
         );
         return toProfileResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public UserProfileResponse updateProfileImage(Long id, MultipartFile image){
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+        String url = fileStorageService.save(image);
+        user.updateProfileImageUrl(url);
+
+        return new UserProfileResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getCreatedAt(),
+                user.getProfileImageUrl(),
+                user.getAddress(),
+                user.getDetailAddress(),
+                user.getPhone(),
+                user.getBio()
+        );
     }
 
     private UserProfileResponse toProfileResponse(UserEntity user) {

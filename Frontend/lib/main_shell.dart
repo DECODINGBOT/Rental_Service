@@ -39,9 +39,9 @@ class _MainShellState extends State<MainShell> {
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        backgroundColor: Colors.white,//const Color(0xFFF5EFE7),
+        backgroundColor: Colors.white,
         unselectedItemColor: Colors.grey,
-        selectedItemColor: Colors.black,// const Color(0xFF213555),
+        selectedItemColor: Colors.black,
         type: BottomNavigationBarType.fixed,
         onTap: (newIndex){
           setState(() {
