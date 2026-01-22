@@ -22,7 +22,7 @@ public class JwtProvider {
 
     public JwtProvider(
             @Value("${app.jwt.secret}") String secret,
-            @Value("${app.jwt.accessMinutes}") long accessMinutes
+            @Value("${app.jwt.access-token-minutes}") long accessMinutes
     ){
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessMinutes = accessMinutes;

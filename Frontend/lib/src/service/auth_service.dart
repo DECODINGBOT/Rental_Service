@@ -141,7 +141,7 @@ class AuthService extends ChangeNotifier {
           return;
         }
 
-        final user = LongUserSession.fromJson(data);
+        final user = LongUserSession.fromJson(userJson);
         _session = user;
         await _storage.saveLogin(
           accessToken: access,

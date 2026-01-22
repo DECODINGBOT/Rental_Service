@@ -168,7 +168,8 @@ class _LoginPageState extends State<LoginPage> {
             onError: (err) {
               // 에러 발생
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text('아이디와 비밀번호를 정확하게 입력해주세요.'),
+                content: Text(err),
+                //content: Text('아이디와 비밀번호를 정확하게 입력해주세요.'),
               ));
             },
           );
