@@ -5,6 +5,9 @@ import 'package:sharing_items/src/service/favorites_provider.dart';
 import 'package:sharing_items/src/service/product_service.dart';
 import 'package:sharing_items/src/api_config.dart';
 import 'package:sharing_items/src/service/auth_service.dart';
+import 'package:sharing_items/screens/payment_screen.dart';
+import 'package:sharing_items/src/service/transaction_service.dart';
+
 
 class ProductDetailScreen extends StatefulWidget {
   final int productId;
@@ -180,11 +183,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         border: Border.all(color: Colors.black, width: 1),
                         color: Colors.grey.shade200,
                       ),
-                      child: (thumbnailUrl == null)
+                      child: (thumb == null)
                           ? const Center(child: Icon(Icons.image, size: 60, color: Colors.black54))
                           : ClipRRect(
                         child: Image.network(
-                          _absUrl(thumbnailUrl),
+                          thumb,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => const Center(
                             child: Icon(Icons.broken_image,
@@ -284,11 +287,59 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               child: SizedBox(
                 height: 52,
                 child: OutlinedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if(isMine){
                       /// TODO: 수정화면으로
+                      return;
                     } else{
                       /// TODO: 대여하기
+                      final s = session;
+                      if(s == null){
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('로그인이 필요합니다.')),
+                        );
+                        return;
+                      }
+                      try {
+                        // 2) 트랜잭션 생성
+                        final txService = TransactionService(
+                          auth.client,
+                          baseUrl: ApiConfig.baseUrl,
+                        );
+
+                        final created = await txService.create(
+                          productId: dto.id,      // dto에서
+                          renterUserId: s.id,            // 로그인 유저
+                        );
+
+                        // 3) 결제 화면 진입
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PaymentScreen(
+                              transactionId: created.id,
+                              orderName: dto.title,       // 상품명
+                              customerName: s.username,   // 로그인 유저명
+                            ),
+                          ),
+                        );
+
+                        // 4) 결제 완료 후 처리(일단 토스트)
+                        if (!mounted) return;
+                        if (result != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('결제가 완료되었습니다.')),
+                          );
+
+                          // TODO(다음 단계): 여기서 /api/transactions/{id}/start 호출로 대여기간 확정
+                          // 또는 결제 완료 화면으로 이동
+                        }
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('대여하기 실패: $e')),
+                        );
+                      }
                     }
                   },
                   style: OutlinedButton.styleFrom(

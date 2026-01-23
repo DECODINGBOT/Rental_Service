@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart'; // NEW
 import 'package:provider/provider.dart';
 import 'package:sharing_items/screens/detail_screen.dart'; // 경로 맞게
+import 'package:sharing_items/src/product_categories.dart';
 import 'package:sharing_items/src/service/auth_service.dart';
 import 'package:sharing_items/src/api_config.dart';
 import 'package:sharing_items/src/service/product_provider.dart';
@@ -33,6 +34,7 @@ class _WriteScreenState extends State<WriteScreen> {
 
   final _formKey = GlobalKey<FormState>();
 
+  String _selectedCategory = '기타';
   DateTime? _startDate;
   DateTime? _endDate;
 
@@ -206,7 +208,7 @@ class _WriteScreenState extends State<WriteScreen> {
     final pricePerDay = int.tryParse(_priceCtrl.text.trim()) ?? 0;
     final deposit = int.tryParse(_depositCtrl.text.trim().isEmpty ? '0' : _depositCtrl.text.trim()) ?? 0;
     final desc = _descCtrl.text.trim();
-    final category = '기타'; // 지금 UI에 카테고리 입력이 없으니 일단 고정(추후 선택 UI로)
+    final category = _selectedCategory; // 지금 UI에 카테고리 입력이 없으니 일단 고정(추후 선택 UI로)
 
     try {
       final productService = ProductService(auth.client);
@@ -299,6 +301,8 @@ class _WriteScreenState extends State<WriteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final List<Map<String, dynamic>> categories = categoryList;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -408,6 +412,33 @@ class _WriteScreenState extends State<WriteScreen> {
                 const Text(
                   '최소 1장 이상의 사진을 등록해 주세요.',
                   style: TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+
+                // 카테고리
+                _label('카테고리'),
+                DropdownButtonFormField<String>(
+                  value: _selectedCategory,
+                  decoration: _boxInput('카테고리를 선택해 주세요').copyWith(
+                    hintText: null, // _boxInput에 hintText가 있어서 dropdown에서는 제거
+                  ),
+                  items: categories.map((c) {
+                    final label = c['label'] as String;
+                    final icon = c['icon'] as IconData;
+                    return DropdownMenuItem(
+                      value: label,
+                      child: Row(
+                        children: [
+                          Icon(icon, size: 18, color: Colors.black87),
+                          const SizedBox(width: 8),
+                          Text(label),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _selectedCategory = value);
+                  },
                 ),
 
                 // 상품명

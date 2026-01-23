@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sharing_items/const/colors.dart';
 import 'package:sharing_items/screens/write_screen.dart';
 import 'package:sharing_items/src/custom/item_info.dart';
+import 'package:sharing_items/src/product_categories.dart';
 import 'package:sharing_items/src/service/favorites_provider.dart';
 import 'package:sharing_items/screens/product_detail_screen.dart';
 import 'package:sharing_items/src/service/product_provider.dart';
@@ -28,7 +29,18 @@ class _HomeScreenState extends State<HomeScreen>
   String _currentLocationText = "위치 설정";
   final TextEditingController _locationInputCtrl = TextEditingController();
 
+  final List<Map<String, dynamic>> categories = categoryList;
+  /*
   final List<Map<String, dynamic>> categories = [
+    {"icon": Icons.terrain, "label": "캠핑/여행"},
+    {"icon": Icons.celebration, "label": "파티/행사"},
+    {"icon": Icons.sports, "label": "스포츠/레저"},
+    {"icon": Icons.pets, "label": "애완동물"},
+    {"icon": Icons.flight, "label": "여행/캠핑"},
+    {"icon": Icons.photo_camera, "label": "촬영/장비"},
+    {"icon": Icons.child_care, "label": "육아"},
+    {"icon": Icons.category, "label": "기타"},
+    /*
     {"icon": Icons.directions_car, "label": "자동차용품"},
     {"icon": Icons.home, "label": "생활용품"},
     {"icon": Icons.sports, "label": "스포츠용품"},
@@ -37,7 +49,10 @@ class _HomeScreenState extends State<HomeScreen>
     {"icon": Icons.checkroom, "label": "의류/신발"},
     {"icon": Icons.devices, "label": "전자/가전제품"},
     {"icon": Icons.category, "label": "기타"},
+     */
   ];
+
+   */
 
   late final TextEditingController _internalController;
   TextEditingController get _controller =>
