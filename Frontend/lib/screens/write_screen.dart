@@ -1,8 +1,15 @@
+import 'dart:convert';
 import 'dart:io'; // NEW
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart'; // NEW
+import 'package:provider/provider.dart';
 import 'package:sharing_items/screens/detail_screen.dart'; // 경로 맞게
+import 'package:sharing_items/src/service/auth_service.dart';
+import 'package:sharing_items/src/api_config.dart';
+import 'package:sharing_items/src/service/product_provider.dart';
+import 'package:sharing_items/src/service/product_service.dart';
+import 'package:sharing_items/src/service/token_storage.dart';
 
 class WriteScreen extends StatefulWidget {
   const WriteScreen({super.key});
@@ -175,24 +182,90 @@ class _WriteScreenState extends State<WriteScreen> {
   }
 
   // ▼▼▼ 여기서 MyPage로 결과(Map)를 전달 ▼▼▼
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-
     // --- NEW: 최소 1장 검증 ---
     if (_images.isEmpty) {
       _showError('최소 1장 이상의 사진을 등록해 주세요.');
       return;
     }
-
     if (_startDate == null || _endDate == null) {
       _showError('대여 가능 기간을 선택해 주세요.');
       return;
     }
 
-    // TODO: 업로드 로직(이미지/데이터 전송) 연결
-    // 예: Firebase Storage 업로드 후 다운로드 URL 수집 -> Firestore/서버에 상품 데이터 저장
-    // final urls = await _uploadAllImages(_images);
+    final auth = context.read<AuthService>();
+    final session = auth.currentUser();
+    if(session == null){
+      _showError('로그인이 필요합니다.');
+      return;
+    }
 
+    final title = _titleCtrl.text.trim();
+    final location = _placeCtrl.text.trim();
+    final pricePerDay = int.tryParse(_priceCtrl.text.trim()) ?? 0;
+    final deposit = int.tryParse(_depositCtrl.text.trim().isEmpty ? '0' : _depositCtrl.text.trim()) ?? 0;
+    final desc = _descCtrl.text.trim();
+    final category = '기타'; // 지금 UI에 카테고리 입력이 없으니 일단 고정(추후 선택 UI로)
+
+    try {
+      final productService = ProductService(auth.client);
+
+      // 1) create (DB 저장)
+      final createUri = Uri.parse('${ApiConfig.baseUrl}/api/products');
+      final createRes = await auth.client.post(
+        createUri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'title': title,
+          'description': desc.isEmpty ? '설명 없음' : desc,
+          'category': category,
+          'pricePerDay': pricePerDay,
+          'deposit': deposit,
+          'location': location,
+          'thumbnailUrl': null,
+          'ownerUserId': session.id,
+        }),
+      );
+
+      if (createRes.statusCode < 200 || createRes.statusCode >= 300) {
+        throw Exception('상품 생성 실패: ${createRes.statusCode} ${createRes.body}');
+      }
+
+      final created = jsonDecode(createRes.body) as Map<String, dynamic>;
+      final productId = (created['id'] as num).toInt();
+
+      // 2) upload thumbnail (첫 번째 이미지 사용)
+      final tokenStorage = TokenStorage();
+      final access = await tokenStorage.readAccessToken();
+      if (access == null || access.isEmpty) {
+        throw Exception('accessToken 없음');
+      }
+
+      final thumbUrl = await productService.uploadThumbnail(
+        productId: productId,
+        file: File(_images.first.path),
+        accessToken: access,
+      );
+
+      // 3) 홈 목록 갱신
+      await context.read<ProductProvider>().refreshAllAndMy(session.id);
+
+      if (!mounted) return;
+      Navigator.pop(context, true);
+      /*
+      Navigator.pop(context, {
+        'productId': productId,
+        'title': title,
+        'createdAt': DateTime.now().toIso8601String(),
+        'thumbnailUrl': thumbUrl,
+      });
+       */
+    } catch (e) {
+      _showError('등록 실패: $e');
+    }
+
+    /*
     // ✅ 작성 결과를 MyPage로 전달
     Navigator.pop(context, {
       // MyPage에서 사용할 핵심 값들
@@ -211,6 +284,7 @@ class _WriteScreenState extends State<WriteScreen> {
       'imagePaths': _images.map((x) => x.path).toList(),
       // 'imageUrls': urls, // 업로드 후라면 이 키로 전달
     });
+    */
   }
 
   @override
@@ -463,7 +537,7 @@ class _WriteScreenState extends State<WriteScreen> {
                   height: 48,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: strong,
+                      backgroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -475,7 +549,7 @@ class _WriteScreenState extends State<WriteScreen> {
                     onPressed: _submit,
                     child: const Text(
                       '등록하기',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.black),
                     ),
                   ),
                 ),

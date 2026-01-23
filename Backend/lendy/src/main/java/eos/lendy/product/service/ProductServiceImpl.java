@@ -165,6 +165,7 @@ public class ProductServiceImpl implements ProductService {
                 p.getLocation(),
                 p.getThumbnailUrl(),
                 p.getStatus(),
+                p.getOwner().getId(),
                 p.getOwner().getUsername(),
                 p.getOwner().getProfileImageUrl(),
                 p.getCreatedAt()

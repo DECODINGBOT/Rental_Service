@@ -8,6 +8,7 @@ import 'package:sharing_items/screens/write_screen.dart';
 import 'package:sharing_items/src/custom/item_info.dart';
 import 'package:sharing_items/src/service/favorites_provider.dart';
 import 'package:sharing_items/screens/product_detail_screen.dart';
+import 'package:sharing_items/src/service/product_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   final TextEditingController? searchController;
@@ -52,6 +53,9 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProductProvider>().refreshAll();
+    });
     _internalController = TextEditingController();
     _controller.addListener(_onSearchChanged); // 검색어 변경 시 재빌드
 
@@ -272,8 +276,19 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     // Provider 감시: 즐겨찾기 변경 시 자동 재빌드
+    final products = context.watch<ProductProvider>().all;
     final fav = context.watch<FavoritesProvider>();
-    final results = _filtered(fav.all);
+    //final results = _filtered(fav.all);
+    final results = _filtered(
+      products.map((p) => {
+        'id': p.id,
+        'title': p.title,
+        'category': p.category,
+        'location': p.location,
+        'price': p.pricePerDay,
+        'thumbnailUrl': p.thumbnailUrl,
+      }).toList(),
+    );
 
     return Scaffold(
       backgroundColor: Colors.white, //backgroundColor,
@@ -447,7 +462,7 @@ class _HomeScreenState extends State<HomeScreen>
           SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               final m = results[index];
-              final id = m['id'] as String;
+              final productId = m['id'] as int;
 
               return Padding(
                 padding: const EdgeInsets.symmetric(
@@ -462,28 +477,23 @@ class _HomeScreenState extends State<HomeScreen>
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ProductDetailScreen(
-                          showSearchBar: true, // 홈 탭에서 들어왔으니까
-                          productId: id, // ⭐ 필수
-                          sellerName: '아이디', // 일단 더미
-                          title: m['title'] as String,
-                          location: m['location'] as String,
-                          pricePerDayLabel: '${m['price']}원 / day',
-                          depositLabel: '보증금 0원', // 지금 데이터 없으면 더미로
-                          dateRangeLabel: '대여기간 선택', // 더미
-                        ),
+                        builder: (_) => ProductDetailScreen(productId: productId),
                       ),
                     );
                   },
                   child: ItemInfo(
-                    key: ValueKey(id),
+                    key: ValueKey(productId),
                     category: m['category'] as String,
                     title: m['title'] as String,
                     location: m['location'] as String,
                     price: m['price'] as int,
-                    isLike: fav.isFavoriteById(id),
-                    onLikeChanged: (_) =>
-                        context.read<FavoritesProvider>().toggleById(id),
+                    thumbnailUrl: m['thumbnailUrl'] as String?,
+                    isLike: productId != -1 && fav.isFavoriteByProductId(productId),
+                    onLikeChanged: (_) {
+                      if(productId != -1){
+                        context.read<FavoritesProvider>().toggleByProductId(productId);
+                      }
+                    },
                   ),
                 ),
               );

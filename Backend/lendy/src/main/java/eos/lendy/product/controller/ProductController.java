@@ -27,28 +27,28 @@ public class ProductController {
     }
 
     @GetMapping("/my")
-    public List<ProductListResponse> readMyProductsLatest(@RequestParam Long ownerUserId) {
+    public List<ProductListResponse> readMyProductsLatest(@RequestParam("ownerUserId") Long ownerUserId) {
         return productService.readMyProductsLatest(ownerUserId);
     }
 
     @GetMapping("/{id}")
-    public ProductDetailResponse read(@PathVariable Long id) {
+    public ProductDetailResponse read(@PathVariable("id") Long id) {
         return productService.read(id);
     }
 
     @PatchMapping("/{id}")
-    public void update(@PathVariable Long id, @RequestBody ProductUpdateRequest request) {
+    public void update(@PathVariable("id") Long id, @RequestBody ProductUpdateRequest request) {
         productService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable("id") Long id) {
         productService.delete(id);
     }
 
     @PostMapping(value = "/{id}/thumbnail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ProductThumbnailUploadResponse uploadThumbnail(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestPart("file") MultipartFile file
     ) {
         return productService.uploadThumbnail(id, file);

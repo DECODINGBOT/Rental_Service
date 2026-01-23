@@ -15,6 +15,7 @@ public record ProductListResponse(
         String location,
         String thumbnailUrl,
         ProductStatus status,
+        Long ownerUserId,
         String ownerUsername,
         String ownerProfileImageUrl,
         LocalDateTime createdAt

@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:sharing_items/screens/login_screen.dart';
+import 'package:sharing_items/screens/product_detail_screen.dart';
 import 'package:sharing_items/screens/write_screen.dart';
 import 'package:sharing_items/screens/edit_myinfo_screen.dart';
 import 'package:sharing_items/src/api_config.dart';
 import 'package:sharing_items/src/service/auth_service.dart';
+import 'package:sharing_items/src/service/product_provider.dart';
+import 'package:sharing_items/src/service/product_service.dart';
 
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
@@ -51,7 +54,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
   String? address;
 
   // 내가 쓴 글 (WriteScreen에서 돌아온 내용을 쌓아 보여줌)
-  final List<MyPost> myPosts = [];
+  //final List<MyPost> myPosts = [];
 
   // 임시 데이터: 대여내역
   final List<RentalItem> myRentals = [];
@@ -93,6 +96,11 @@ class _MyPageScreenState extends State<MyPageScreen> {
         profileImageUrl = profile.profileImageUrl;
         /// detailAddress/phone/bio
       });
+
+      final session = auth.currentUser();
+      if(session != null){
+        await context.read<ProductProvider>().refreshMy(session.id);
+      }
     } catch (e){
       if(!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -103,6 +111,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final myProducts = context.watch<ProductProvider>().my;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: PreferredSize(
@@ -185,7 +195,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
               ),
               const SizedBox(height: 8),
               _MyPostsArea(
-                posts: myPosts,
+                products: myProducts,
                 bodyStyle: _bodyStyle,
                 detailStyle: _detailStyle,
               ),
@@ -475,26 +485,24 @@ class _MyPageScreenState extends State<MyPageScreen> {
   }
 
   Future<void> _onWriteTapped(BuildContext context) async {
-    final result = await Navigator.push(
+    final ok = await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const WriteScreen()),
     );
 
     if (!mounted) return;
 
-    // WriteScreen에서 Map 형태로 결과를 돌려준다고 가정
-    if (result is Map) {
-      try {
-        final post = MyPost.fromMap(result);
-        setState(() {
-          myPosts.insert(0, post); // 최신 글을 위로
-        });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('글이 등록되었습니다.')));
-      } catch (_) {
-        // 결과 형식이 다를 경우 무시
+    if (ok == true) {
+      final auth = context.read<AuthService>();
+      final session = auth.currentUser();
+      if (session != null) {
+        await context.read<ProductProvider>().refreshMy(session.id);
       }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('글이 등록되었습니다.')),
+      );
     }
   }
 }
@@ -530,18 +538,26 @@ class _SectionHeader extends StatelessWidget {
 
 class _MyPostsArea extends StatelessWidget {
   const _MyPostsArea({
-    required this.posts,
+    required this.products,
     required this.bodyStyle,
     required this.detailStyle,
   });
 
-  final List<MyPost> posts;
+  final List<ProductListDto> products;
   final TextStyle bodyStyle;
   final TextStyle detailStyle;
 
+  String _dateText(String iso){
+    final d = DateTime.tryParse(iso);
+    if(d == null){
+      return '-';
+    }
+    return '${d.year}.${d.month.toString().padLeft(2,'0')}.${d.day.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (posts.isEmpty) {
+    if (products.isEmpty) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -570,14 +586,15 @@ class _MyPostsArea extends StatelessWidget {
       child: ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: posts.length,
+        itemCount: products.length,
         separatorBuilder: (_, __) => const Divider(height: 1),
         itemBuilder: (context, index) {
-          final p = posts[index];
+          final p = products[index];
+
           return ListTile(
             title: Text(p.title, style: bodyStyle),
             subtitle: Text(
-              '등록일 ${p.createdAt.year}.${p.createdAt.month.toString().padLeft(2, '0')}.${p.createdAt.day.toString().padLeft(2, '0')}',
+              '등록일 ${_dateText(p.createdAt)}',
               style: detailStyle,
             ),
             trailing: const Icon(
@@ -586,6 +603,12 @@ class _MyPostsArea extends StatelessWidget {
             ),
             onTap: () {
               // TODO: 상세 페이지로 이동하고 싶다면 여기 연결
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ProductDetailScreen(productId: p.id),
+                ),
+              );
             },
           );
         },

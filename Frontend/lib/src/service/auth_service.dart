@@ -73,6 +73,7 @@ class AuthService extends ChangeNotifier {
   LongUserSession? _session;
   LongUserSession? currentUser() => _session;
   bool get isLoggedIn => _session != null;
+  http.Client get client => _client;
 
   /// 앱 시작 시 호출: 저장된 refreshToken으로 accessToken 갱신 + 세션 복원
   Future<bool> tryAutoLogin() async {
