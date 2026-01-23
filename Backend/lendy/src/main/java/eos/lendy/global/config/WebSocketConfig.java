@@ -1,4 +1,5 @@
-package eos.lendy.message.config;
+
+package eos.lendy.global.config;
 
 import eos.lendy.message.websocket.StompAuthChannelInterceptor;
 import lombok.RequiredArgsConstructor;
