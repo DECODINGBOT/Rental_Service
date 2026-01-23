@@ -14,7 +14,7 @@ public class PaymentController {
 
     @PostMapping("/prepare")
     public PaymentPrepareResponse prepare(@RequestBody PaymentPrepareRequest req) {
-        return paymentService.prepare(req.getTransactionId());
+        return paymentService.prepare(req.getTransactionId(), req.getRentalDays());
     }
 
     @PostMapping("/confirm")
