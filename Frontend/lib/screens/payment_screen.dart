@@ -9,6 +9,7 @@ import 'package:sharing_items/src/service/payment_service.dart';
 
 class PaymentScreen extends StatefulWidget {
   final int transactionId;
+  final int rentalDays;
 
   /// orderName/customerName은 일단 파라미터로 받게 해두면 좋아
   final String orderName;
@@ -17,6 +18,7 @@ class PaymentScreen extends StatefulWidget {
   const PaymentScreen({
     super.key,
     required this.transactionId,
+    required this.rentalDays,
     required this.orderName,
     required this.customerName,
   });
@@ -144,6 +146,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       // 1) 서버 prepare
       final prepared = await paymentService.prepare(
         transactionId: widget.transactionId,
+        rentalDays: widget.rentalDays,
       );
 
       // 2) 결제 HTML 로드 (prepared.orderId, prepared.amount를 주입)

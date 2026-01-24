@@ -47,11 +47,12 @@ public class PaymentService {
         TransactionEntity tx = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new IllegalArgumentException("transactionId does not exist."));
 
+        /*
         if (tx.getStatus() != TransactionStatus.ACCEPTED) {
             throw new IllegalStateException(
                     "Payment can be prepared only when transaction is ACCEPTED. Current=" + tx.getStatus()
             );
-        }
+        }*/
 
         ProductEntity product = tx.getProduct();
         if (product == null) {

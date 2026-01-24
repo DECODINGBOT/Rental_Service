@@ -51,4 +51,18 @@ public class TransactionController {
     public TransactionResponse cancel(@PathVariable Long id, @RequestBody(required = false) TransactionCancelRequest req) {
         return transactionService.cancel(id);
     }
+
+    /*
+    // TransactionController.java 에 추가
+    @GetMapping("/renter/{renterUserId}")
+    public java.util.List<TransactionResponse> listByRenter(@PathVariable Long renterUserId) {
+        return transactionService.listByRenter(renterUserId);
+    }
+
+    @GetMapping("/owner/{ownerUserId}")
+    public java.util.List<TransactionResponse> listByOwner(@PathVariable Long ownerUserId) {
+        return transactionService.listByOwner(ownerUserId);
+    }
+    
+     */
 }

@@ -19,6 +19,8 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   late Future<ProductDetailDto> _future;
+  DateTime? _rentalStart;
+  DateTime? _rentalEnd;
 
   @override
   void initState() {
@@ -34,6 +36,34 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       return urlOrPath;
     }
     return '${ApiConfig.baseUrl}$urlOrPath';
+  }
+
+  Future<void> _pickRentalDate(bool isStart) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (picked == null) return;
+
+    setState(() {
+      if (isStart) {
+        _rentalStart = picked;
+        if (_rentalEnd != null && _rentalEnd!.isBefore(picked)) {
+          _rentalEnd = null;
+        }
+      } else {
+        _rentalEnd = picked;
+      }
+    });
+  }
+
+  int _calcRentalDays(DateTime start, DateTime end) {
+    final s = DateTime(start.year, start.month, start.day);
+    final e = DateTime(end.year, end.month, end.day);
+    return e.difference(s).inDays + 1; // 같은 날 = 1일
   }
 
   @override
@@ -237,23 +267,68 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                   const SizedBox(height: 16),
 
-                  /*
                   // 대여 기간
                   const _SectionTitle(
                     icon: Icons.calendar_month,
                     title: '대여기간을 선택해주세요',
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 10),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => _pickRentalDate(true),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.black, width: 1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              _rentalStart == null
+                                  ? '시작일 선택'
+                                  : '${_rentalStart!.year}.${_rentalStart!.month.toString().padLeft(2, '0')}.${_rentalStart!.day.toString().padLeft(2, '0')}',
+                              style: const TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text('~', style: TextStyle(fontWeight: FontWeight.w900)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => _pickRentalDate(false),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.black, width: 1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              _rentalEnd == null
+                                  ? '종료일 선택'
+                                  : '${_rentalEnd!.year}.${_rentalEnd!.month.toString().padLeft(2, '0')}.${_rentalEnd!.day.toString().padLeft(2, '0')}',
+                              style: const TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+
                   Text(
-                    d.dateRangeLabel,
-                    style: const TextStyle(
-                      decoration: TextDecoration.underline,
-                      fontWeight: FontWeight.w900,
-                    ),
+                    (_rentalStart != null && _rentalEnd != null)
+                        ? '총 ${_calcRentalDays(_rentalStart!, _rentalEnd!)}일'
+                        : '대여 일수를 선택하면 결제 금액이 계산됩니다.',
+                    style: const TextStyle(fontSize: 12, color: Colors.black54),
                   ),
 
                   const SizedBox(height: 18),
-                   */
+
 
                   /// 위치
                   const Text(
@@ -288,60 +363,94 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 height: 52,
                 child: OutlinedButton(
                   onPressed: () async {
-                    if(isMine){
-                      /// TODO: 수정화면으로
+                    if (isMine) {
                       return;
-                    } else{
-                      /// TODO: 대여하기
-                      final s = session;
-                      if(s == null){
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('로그인이 필요합니다.')),
-                        );
-                        return;
-                      }
-                      try {
-                        // 2) 트랜잭션 생성
-                        final txService = TransactionService(
-                          auth.client,
-                          baseUrl: ApiConfig.baseUrl,
-                        );
+                    }
 
-                        final created = await txService.create(
-                          productId: dto.id,      // dto에서
-                          renterUserId: s.id,            // 로그인 유저
-                        );
+                    final s = session;
+                    if (s == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('로그인이 필요합니다.')),
+                      );
+                      return;
+                    }
 
-                        // 3) 결제 화면 진입
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => PaymentScreen(
-                              transactionId: created.id,
-                              orderName: dto.title,       // 상품명
-                              customerName: s.username,   // 로그인 유저명
-                            ),
+                    // ✅ 대여기간 선택 검증
+                    if (_rentalStart == null || _rentalEnd == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('대여 기간을 선택해 주세요.')),
+                      );
+                      return;
+                    }
+
+                    final rentalDays = _calcRentalDays(_rentalStart!, _rentalEnd!);
+                    if (rentalDays <= 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('대여 기간이 올바르지 않습니다.')),
+                      );
+                      return;
+                    }
+
+                    try {
+                      final txService = TransactionService(
+                        auth.client,
+                        baseUrl: ApiConfig.baseUrl,
+                      );
+
+                      final created = await txService.create(
+                        productId: dto.id,     // dto.id가 productId 맞는지 확인(보통 맞음)
+                        renterUserId: s.id,
+                      );
+
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PaymentScreen(
+                            transactionId: created.id,
+                            rentalDays: rentalDays,          // ✅ 추가
+                            orderName: dto.title,
+                            customerName: s.username,
                           ),
+                        ),
+                      );
+
+                      if (!mounted) return;
+                      // 결제 성공이면 PaymentScreen이 confirmed dto를 pop으로 넘겨줌
+                      if (result != null) {
+                        // ✅ 결제 성공 후: 대여 시작 확정(startAt/endAt 서버 반영)
+                        final start = _rentalStart!;
+                        final end = _rentalEnd!;
+
+                        final started = await txService.startRental(
+                          transactionId: created.id,
+                          startAt: start,
+                          endAt: end,
                         );
 
-                        // 4) 결제 완료 후 처리(일단 토스트)
                         if (!mounted) return;
-                        if (result != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('결제가 완료되었습니다.')),
-                          );
 
-                          // TODO(다음 단계): 여기서 /api/transactions/{id}/start 호출로 대여기간 확정
-                          // 또는 결제 완료 화면으로 이동
-                        }
-                      } catch (e) {
-                        if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('대여하기 실패: $e')),
+                          SnackBar(content: Text('대여가 시작되었습니다. 상태: ${started.status}')),
                         );
+
+                        // 선택사항: 화면 새로고침(상태/버튼 등 반영)
+                        setState(() {
+                          final auth2 = context.read<AuthService>();
+                          final service2 = ProductService(auth2.client);
+                          _future = service2.fetchDetail(widget.productId);
+                        });
+
+                        // 선택사항: 여기서 바로 뒤로가기
+                        // Navigator.pop(context, true);
                       }
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('대여하기 실패: $e')),
+                      );
                     }
                   },
+
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.black,
                     side: const BorderSide(color: Colors.black, width: 1),

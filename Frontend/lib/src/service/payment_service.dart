@@ -44,12 +44,19 @@ class PaymentService {
 
   PaymentService(this.client, {required this.baseUrl});
 
-  Future<PaymentPrepareDto> prepare({required int transactionId}) async {
+  // payment_service.dart (prepare 수정)
+  Future<PaymentPrepareDto> prepare({
+    required int transactionId,
+    required int rentalDays,
+  }) async {
     final uri = Uri.parse('$baseUrl/api/payments/prepare');
     final res = await client.post(
       uri,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'transactionId': transactionId}),
+      body: jsonEncode({
+        'transactionId': transactionId,
+        'rentalDays': rentalDays,
+      }),
     );
 
     if (res.statusCode < 200 || res.statusCode >= 300) {

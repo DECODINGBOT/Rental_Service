@@ -10,6 +10,7 @@ import 'package:sharing_items/src/api_config.dart';
 import 'package:sharing_items/src/service/auth_service.dart';
 import 'package:sharing_items/src/service/product_provider.dart';
 import 'package:sharing_items/src/service/product_service.dart';
+import 'package:sharing_items/src/service/transaction_service.dart';
 
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
@@ -59,6 +60,10 @@ class _MyPageScreenState extends State<MyPageScreen> {
   // 임시 데이터: 대여내역
   final List<RentalItem> myRentals = [];
 
+  List<TransactionResponseDto> _rentals = [];
+  bool _loadingRentals = false;
+  String? _rentalError;
+
   String _dateText(DateTime d) =>
       "${d.year}.${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}";
 
@@ -80,6 +85,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
   void initState() {
     super.initState();
     _loadProfile();
+    //_loadRentals();
   }
 
   Future<void> _loadProfile() async{
@@ -108,6 +114,33 @@ class _MyPageScreenState extends State<MyPageScreen> {
       );
     }
   }
+/*
+  Future<void> _loadRentals() async {
+    final auth = context.read<AuthService>();
+    final session = auth.currentUser();
+    if (session == null) return;
+
+    setState(() {
+      _loadingRentals = true;
+      _rentalError = null;
+    });
+
+    try {
+      final txService = TransactionService(auth.client, baseUrl: ApiConfig.baseUrl);
+      final list = await txService.listByRenter(session.id);
+
+      if (!mounted) return;
+      setState(() => _rentals = list);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _rentalError = '$e');
+    } finally {
+      if (!mounted) return;
+      setState(() => _loadingRentals = false);
+    }
+  }
+
+ */
 
   @override
   Widget build(BuildContext context) {
