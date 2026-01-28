@@ -13,6 +13,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -21,14 +28,18 @@ public class SecurityConfig {
 
     private final JwtProvider jwtProvider;
 
+    @Value("${app.cors.allowed-origins:}")
+    private String corsAllowedOrigins;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
         http
                 .csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults())
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
-                /// JWT를 쓰면 세션 사애를 서버에 저장하지 않는게 기본
+                // When using JWT, the server should not store session state
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                ///  인증/인가 규칙
+                // Authentication and authorization rules
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/h2-console/**",
@@ -37,14 +48,48 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/swagger-ui.html"
-                                ,"/ws/**"
+                                "/swagger-ui.html",
+                                "/ws/**"
                         ).permitAll()
                         .anyRequest().authenticated()
+
                 )
-                /// JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 끼워넣기
-                .addFilterBefore(new JwtAuthFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class);
+                // Register the JWT authentication filter before UsernamePasswordAuthenticationFilter
+                .addFilterBefore(
+                        new JwtAuthFilter(jwtProvider),
+                        UsernamePasswordAuthenticationFilter.class
+                );
+
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+
+        // Split app.cors.allowed-origins from application.yml by comma
+        List<String> origins = Arrays.stream(corsAllowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .toList();
+
+        // If empty (missing configuration), allow localhost by default
+        if (origins.isEmpty()) {
+            origins = List.of(
+                    "http://localhost:3000",
+                    "http://localhost:5173",
+                    "http://localhost:8080"
+            );
+        }
+
+        config.setAllowedOrigins(origins);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     @Bean
